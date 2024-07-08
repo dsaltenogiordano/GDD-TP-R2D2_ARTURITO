@@ -62,7 +62,14 @@ GO
 
 -- Tabla TIPO_CAJA
 CREATE TABLE R2D2_ARTURITO.TIPO_CAJA (
-    id_tipo SMALLINT PRIMARY KEY IDENTITY(1,1),
+    id_tipo_caja SMALLINT PRIMARY KEY IDENTITY(1,1),
+    descripcion VARCHAR(50) NULL
+);
+GO
+
+-- Tabla TIPO_COMPROBANTE
+CREATE TABLE R2D2_ARTURITO.TIPO_COMPROBANTE (
+    id_tipo_comprobante SMALLINT PRIMARY KEY IDENTITY(1,1),
     descripcion VARCHAR(50) NULL
 );
 GO
@@ -134,9 +141,9 @@ GO
 CREATE TABLE R2D2_ARTURITO.CAJA (
     id_caja INT PRIMARY KEY IDENTITY(1,1),
     numero SMALLINT NOT NULL,
-    id_tipo SMALLINT NOT NULL,
+    id_tipo_caja SMALLINT NOT NULL,
 	id_sucursal INT NOT NULL,
-    FOREIGN KEY (id_tipo) REFERENCES R2D2_ARTURITO.TIPO_CAJA(id_tipo),
+    FOREIGN KEY (id_tipo_caja) REFERENCES R2D2_ARTURITO.TIPO_CAJA(id_tipo_caja),
 	FOREIGN KEY (id_sucursal) REFERENCES R2D2_ARTURITO.SUCURSAL(id_sucursal)
 );
 GO
@@ -158,16 +165,22 @@ GO
 
 -- Tabla VENTA
 CREATE TABLE R2D2_ARTURITO.VENTA (
-    id_venta INT PRIMARY KEY IDENTITY(1,1),
-    fecha DATE NOT NULL,
-    total DECIMAL(10,2) NOT NULL,
-    descuento DECIMAL(10,2) NOT NULL,
-    sucursal_venta INT NOT NULL,
-    empleado_venta INT NOT NULL,
-    caja_venta INT NOT NULL,
-    FOREIGN KEY (sucursal_venta) REFERENCES R2D2_ARTURITO.SUCURSAL(id_sucursal),
-    FOREIGN KEY (empleado_venta) REFERENCES R2D2_ARTURITO.EMPLEADO(id_empleado),
-    FOREIGN KEY (caja_venta) REFERENCES R2D2_ARTURITO.CAJA(id_caja)
+    id_venta BIGINT PRIMARY KEY IDENTITY(1,1),
+	numero_venta BIGINT NOT NULL,
+    fecha SMALLDATETIME NULL,
+	subtotal DECIMAL(10,2) NULL,
+    total_descuento_promociones DECIMAL(10,2) NULL,
+	total_descuento_aplicado_mp DECIMAL(10,2) NULL,
+	total_envio DECIMAL(10,2) NULL,
+	total_venta DECIMAL(10,2) NULL,
+    id_sucursal INT NOT NULL,
+    id_empleado INT NOT NULL,
+    id_caja INT NOT NULL,
+	id_tipo_comprobante SMALLINT NOT NULL,
+    FOREIGN KEY (id_sucursal) REFERENCES R2D2_ARTURITO.SUCURSAL(id_sucursal),
+    FOREIGN KEY (id_empleado) REFERENCES R2D2_ARTURITO.EMPLEADO(id_empleado),
+    FOREIGN KEY (id_caja) REFERENCES R2D2_ARTURITO.CAJA(id_caja),
+	FOREIGN KEY (id_tipo_comprobante) REFERENCES R2D2_ARTURITO.TIPO_COMPROBANTE(id_tipo_comprobante)
 );
 GO
 
