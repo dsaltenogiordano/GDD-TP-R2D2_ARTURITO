@@ -15,9 +15,16 @@ CREATE TABLE R2D2_ARTURITO.CATEGORIA (
 );
 GO
 
+-- Tabla ESTADO_ENVIO
+CREATE TABLE R2D2_ARTURITO.ESTADO_ENVIO (
+    id_estado_envio INT PRIMARY KEY IDENTITY(1,1),
+    descripcion VARCHAR(50)NOT NULL
+);
+GO
+
 -- Tabla ESTADO_FISCAL
 CREATE TABLE R2D2_ARTURITO.ESTADO_FISCAL (
-    id_estadoFiscal BIGINT PRIMARY KEY IDENTITY(1,1),
+    id_estado_fiscal INT PRIMARY KEY IDENTITY(1,1),
     descripcion VARCHAR(255) NULL
 );
 GO
@@ -68,13 +75,13 @@ CREATE TABLE R2D2_ARTURITO.TIPO_MEDIO_PAGO (
 GO
 
 /*************************************************
- *	CREACION DE TABLAS DEPENDIENTES
+ *	CREACION DE TABLAS DEPENDIENTES PARA VENTA
  *************************************************/
 
 -- Tabla LOCALIDAD
 CREATE TABLE R2D2_ARTURITO.LOCALIDAD (
     id_localidad SMALLINT PRIMARY KEY IDENTITY(1,1),
-    nombre VARCHAR(50)NOT NULL,
+    nombre VARCHAR(50) NULL,
     id_provincia SMALLINT NOT NULL,
     FOREIGN KEY (id_provincia) REFERENCES R2D2_ARTURITO.PROVINCIA(id_provincia)
 );
@@ -83,16 +90,9 @@ GO
 -- Tabla DIRECCION
 CREATE TABLE R2D2_ARTURITO.DIRECCION (
     id_direccion INT PRIMARY KEY IDENTITY(1,1),
-    domicilio VARCHAR(250)NOT NULL,
-    direc_localidad SMALLINT NOT NULL,
-    FOREIGN KEY (direc_localidad) REFERENCES R2D2_ARTURITO.LOCALIDAD(id_localidad)
-);
-GO
-
--- Tabla ESTADO_ENVIO
-CREATE TABLE R2D2_ARTURITO.ESTADO_ENVIO (
-    id_estado_envio INT PRIMARY KEY IDENTITY(1,1),
-    descripcion VARCHAR(50)NOT NULL
+    domicilio VARCHAR(255) NULL,
+    id_localidad SMALLINT NOT NULL,
+    FOREIGN KEY (id_localidad) REFERENCES R2D2_ARTURITO.LOCALIDAD(id_localidad)
 );
 GO
 
@@ -100,32 +100,32 @@ GO
 CREATE TABLE R2D2_ARTURITO.MEDIO_PAGO (
     id_medio_pago INT PRIMARY KEY IDENTITY(1,1),
 	descripcion VARCHAR(50) NOT NULL,
-    medio_pago_tipo INT NOT NULL,
-    FOREIGN KEY (medio_pago_tipo) REFERENCES R2D2_ARTURITO.TIPO_MEDIO_PAGO(id_tipo_medio_pago)
+    id_tipo_medio_pago INT NOT NULL,
+    FOREIGN KEY (TIPO_MEDIO_PAGO) REFERENCES R2D2_ARTURITO.TIPO_MEDIO_PAGO(id_tipo_medio_pago)
 );
 GO
 
 -- Tabla SUPERMERCADO
 CREATE TABLE R2D2_ARTURITO.SUPERMERCADO (
     id_supermercado INT PRIMARY KEY IDENTITY(1,1),
-	nombre VARCHAR(50)NOT NULL,
-    razon_social VARCHAR(50)NOT NULL,
-    SUPER_IBB VARCHAR(50)NOT NULL,
-    direccion INT NOT NULL,
-    inicio_actividad SMALLDATETIME NOT NULL,
-    id_estadoFiscal INT NOT NULL,
-    FOREIGN KEY (direccion) REFERENCES R2D2_ARTURITO.DIRECCION(id_direccion),
-    FOREIGN KEY (id_estadoFiscal) REFERENCES R2D2_ARTURITO.ESTADO_FISCAL(id_estadoFiscal)
+	nombre VARCHAR(50) NULL,
+    razon_social VARCHAR(50) NULL,
+    ingresos_brutos VARCHAR(50) NULL,
+    id_direccion INT NOT NULL,
+    inicio_actividad SMALLDATETIME NULL,
+    id_estado_fiscal INT NOT NULL,
+    FOREIGN KEY (id_direccion) REFERENCES R2D2_ARTURITO.DIRECCION(id_direccion),
+    FOREIGN KEY (id_estado_fiscal) REFERENCES R2D2_ARTURITO.ESTADO_FISCAL(id_estado_fiscal)
 );
 GO
 
 -- Tabla SUCURSAL
 CREATE TABLE R2D2_ARTURITO.SUCURSAL (
     id_sucursal INT PRIMARY KEY IDENTITY(1,1),
-    nombre VARCHAR(50) NOT NULL,
-    id_localidad INT NOT NULL,
+    nombre VARCHAR(50) NULL,
+    id_direccion INT NOT NULL,
     id_supermercado INT NOT NULL,
-    FOREIGN KEY (id_localidad) REFERENCES R2D2_ARTURITO.DIRECCION(id_direccion),
+    FOREIGN KEY (id_direccion) REFERENCES R2D2_ARTURITO.DIRECCION(id_direccion),
     FOREIGN KEY (id_supermercado) REFERENCES R2D2_ARTURITO.SUPERMERCADO(id_supermercado)
 );
 GO
@@ -144,28 +144,69 @@ GO
 -- Tabla EMPLEADO
 CREATE TABLE R2D2_ARTURITO.EMPLEADO (
 	id_empleado INT PRIMARY KEY IDENTITY(1,1),
-    nombre VARCHAR(50) NOT NULL,
-    apellido VARCHAR(50) NOT NULL,
-    fecha_nacimiento  DATE NOT NULL,
-    telefono VARCHAR(20)NOT NULL,
-    email VARCHAR(50)NOT NULL,
+    nombre VARCHAR(50) NULL,
+    apellido VARCHAR(50) NULL,
+	dni VARCHAR(18) NULL,
+    fecha_nacimiento DATE NULL,
+    telefono VARCHAR(20) NULL,
+    email VARCHAR(255) NULL,
+	fecha_registro DATE NULL,
     id_sucursal_empleado INT NOT NULL,
     FOREIGN KEY (id_sucursal_empleado) REFERENCES R2D2_ARTURITO.SUCURSAL(id_sucursal)
 );
 GO
 
+-- Tabla VENTA
+CREATE TABLE R2D2_ARTURITO.VENTA (
+    id_venta INT PRIMARY KEY IDENTITY(1,1),
+    fecha DATE NOT NULL,
+    total DECIMAL(10,2) NOT NULL,
+    descuento DECIMAL(10,2) NOT NULL,
+    sucursal_venta INT NOT NULL,
+    empleado_venta INT NOT NULL,
+    caja_venta INT NOT NULL,
+    FOREIGN KEY (sucursal_venta) REFERENCES R2D2_ARTURITO.SUCURSAL(id_sucursal),
+    FOREIGN KEY (empleado_venta) REFERENCES R2D2_ARTURITO.EMPLEADO(id_empleado),
+    FOREIGN KEY (caja_venta) REFERENCES R2D2_ARTURITO.CAJA(id_caja)
+);
+GO
+
+
+
 -- Tabla CLIENTE
 CREATE TABLE R2D2_ARTURITO.CLIENTE (
     id_cliente INT PRIMARY KEY IDENTITY(1,1),
-    nombre VARCHAR(50)NOT NULL,
-    apellido VARCHAR(50)NOT NULL,
-    dni CHAR(8)NOT NULL,
-    fecha_registro DATE NOT NULL,
-    telefono VARCHAR(15) NOT NULL,
-    mail VARCHAR(100)NOT NULL,
-    fecha_nacimiento DATE NOT NULL,
-    direccion INT NOT NULL,
-    FOREIGN KEY (direccion) REFERENCES R2D2_ARTURITO.DIRECCION(id_direccion)
+    nombre VARCHAR(50) NULL,
+    apellido VARCHAR(50) NULL,
+    dni VARCHAR(18) NULL,
+    fecha_nacimiento DATE NULL,
+    telefono VARCHAR(20) NULL,
+    email VARCHAR(255) NULL,
+	fecha_registro DATE NULL,
+    id_direccion INT NOT NULL,
+    FOREIGN KEY (id_direccion) REFERENCES R2D2_ARTURITO.DIRECCION(id_direccion)
+);
+GO
+
+
+
+
+
+
+-- Tabla ENVIO
+CREATE TABLE R2D2_ARTURITO.ENVIO (
+    id_envio INT PRIMARY KEY IDENTITY(1,1),
+    fecha_programada DATE NULL,
+    fecha_inicio DATE NULL,
+    fecha_fin DATE NULL,
+    fecha_entrega DATE NULL,
+    costo DECIMAL(10,2) NULL,
+    id_estado_envio INT NOT NULL,
+    id_cliente INT NOT NULL,
+	id_venta INT NOT NULL,
+    FOREIGN KEY (id_estado_envio) REFERENCES R2D2_ARTURITO.ESTADO_ENVIO(id_estado_envio),
+    FOREIGN KEY (id_cliente) REFERENCES R2D2_ARTURITO.CLIENTE(id_cliente),
+	FOREIGN KEY (id_venta) REFERENCES R2D2_ARTURITO.VENTA(id_venta)
 );
 GO
 
@@ -219,21 +260,6 @@ CREATE TABLE R2D2_ARTURITO.DESCUENTO (
     porcentaje_descuento DECIMAL(5,2) NOT NULL,
     descuento_x_medio_pago INT NOT NULL,
     FOREIGN KEY (descuento_x_medio_pago) REFERENCES R2D2_ARTURITO.MEDIO_PAGO(id_medio_pago)
-);
-GO
-
--- Tabla VENTA
-CREATE TABLE R2D2_ARTURITO.VENTA (
-    id_venta INT PRIMARY KEY IDENTITY(1,1),
-    fecha DATE NOT NULL,
-    total DECIMAL(10,2) NOT NULL,
-    descuento DECIMAL(10,2) NOT NULL,
-    sucursal_venta INT NOT NULL,
-    empleado_venta INT NOT NULL,
-    caja_venta INT NOT NULL,
-    FOREIGN KEY (sucursal_venta) REFERENCES R2D2_ARTURITO.SUCURSAL(id_sucursal),
-    FOREIGN KEY (empleado_venta) REFERENCES R2D2_ARTURITO.EMPLEADO(id_empleado),
-    FOREIGN KEY (caja_venta) REFERENCES R2D2_ARTURITO.CAJA(id_caja)
 );
 GO
 
@@ -312,21 +338,6 @@ CREATE TABLE R2D2_ARTURITO.PROMOCION_APLICADA (
     FOREIGN KEY (id_promocion_aplicada) REFERENCES R2D2_ARTURITO.PROMOCION(id_promocion),
     FOREIGN KEY (id_item_venta) REFERENCES R2D2_ARTURITO.ITEM_VENTA(id_item_venta),
     PRIMARY KEY (id_promocion_aplicada, id_item_venta)
-);
-GO
-
--- Tabla ENVIO
-CREATE TABLE R2D2_ARTURITO.ENVIO (
-    id_envio INT PRIMARY KEY IDENTITY(1,1),
-    fecha_programada DATE NOT NULL,
-    fecha_inicio DATE NOT NULL,
-    fecha_fin DATE NOT NULL,
-    fecha_entrega DATE NOT NULL,
-    costo_envio DECIMAL(10,2) NOT NULL,
-    estado_envio INT NOT NULL,
-    cliente_envio INT NOT NULL,
-    FOREIGN KEY (estado_envio) REFERENCES R2D2_ARTURITO.ESTADO_ENVIO(id_estado_envio),
-    FOREIGN KEY (cliente_envio) REFERENCES R2D2_ARTURITO.CLIENTE(id_cliente)
 );
 GO
 
