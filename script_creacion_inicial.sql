@@ -36,6 +36,14 @@ CREATE TABLE R2D2_ARTURITO.MARCA (
 );
 GO
 
+-- Tabla PRODUCTO
+CREATE TABLE R2D2_ARTURITO.PRODUCTO (
+    id_producto BIGINT PRIMARY KEY IDENTITY(1,1),
+    descripcion VARCHAR(255) NULL,
+    precio DECIMAL(10,2) NULL
+);
+GO
+
 -- Tabla PROMOCION
 CREATE TABLE R2D2_ARTURITO.PROMOCION (
     id_promocion INT PRIMARY KEY IDENTITY(1,1),
@@ -184,7 +192,9 @@ CREATE TABLE R2D2_ARTURITO.VENTA (
 );
 GO
 
-
+/*************************************************
+ *	CREACION DE TABLAS DEPENDIENTES PARA ENVIO
+ *************************************************/
 
 -- Tabla CLIENTE
 CREATE TABLE R2D2_ARTURITO.CLIENTE (
@@ -200,11 +210,6 @@ CREATE TABLE R2D2_ARTURITO.CLIENTE (
     FOREIGN KEY (id_direccion) REFERENCES R2D2_ARTURITO.DIRECCION(id_direccion)
 );
 GO
-
-
-
-
-
 
 -- Tabla ENVIO
 CREATE TABLE R2D2_ARTURITO.ENVIO (
@@ -223,6 +228,10 @@ CREATE TABLE R2D2_ARTURITO.ENVIO (
 );
 GO
 
+/*************************************************
+ *	CREACION DE TABLAS DEPENDIENTES PARA GESTIONAR PRODUCTOS
+ *************************************************/
+
 -- Tabla REGLA_PROMOCION
 CREATE TABLE R2D2_ARTURITO.REGLA_PROMOCION (
     id_regla INT PRIMARY KEY IDENTITY(1,1),
@@ -232,14 +241,6 @@ CREATE TABLE R2D2_ARTURITO.REGLA_PROMOCION (
     misma_marca BIT NOT NULL,
     mismo_producto BIT NOT NULL,
     descuento_producto DECIMAL(10,2) NOT NULL
-);
-GO
-
--- Tabla PRODUCTO
-CREATE TABLE R2D2_ARTURITO.PRODUCTO (
-    id_producto INT PRIMARY KEY IDENTITY(1,1),
-    descripcion VARCHAR(50) NOT NULL,
-    precio DECIMAL(10,2) NOT NULL
 );
 GO
 
