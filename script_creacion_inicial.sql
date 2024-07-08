@@ -120,6 +120,13 @@ CREATE TABLE R2D2_ARTURITO.MEDIO_PAGO (
 );
 GO
 
+-- Tabla SUBCATEGORIA
+CREATE TABLE R2D2_ARTURITO.SUBCATEGORIA (
+    id_subcategoria BIGINT PRIMARY KEY IDENTITY(1,1),
+    descripcion VARCHAR(50) NULL,
+);
+GO
+
 -- Tabla SUPERMERCADO
 CREATE TABLE R2D2_ARTURITO.SUPERMERCADO (
     id_supermercado INT PRIMARY KEY IDENTITY(1,1),
@@ -232,6 +239,36 @@ GO
  *	CREACION DE TABLAS DEPENDIENTES PARA GESTIONAR PRODUCTOS
  *************************************************/
 
+-- Tabla MARCA_X_PRODUCTO
+CREATE TABLE R2D2_ARTURITO.MARCA_X_PRODUCTO (
+    id_marca INT NOT NULL,
+    id_producto BIGINT NOT NULL,
+    FOREIGN KEY (id_producto) REFERENCES R2D2_ARTURITO.PRODUCTO(id_producto),
+    FOREIGN KEY (id_marca) REFERENCES R2D2_ARTURITO.MARCA(id_marca),
+    PRIMARY KEY (id_producto, id_marca)
+);
+GO
+
+-- Tabla SUBCATEGORIA_X_CATEGORIA
+CREATE TABLE R2D2_ARTURITO.SUBCATEGORIA_X_CATEGORIA (
+    id_categoria BIGINT NOT NULL,
+    id_subcategoria BIGINT NOT NULL,
+    FOREIGN KEY (id_categoria) REFERENCES R2D2_ARTURITO.CATEGORIA(id_categoria),
+    FOREIGN KEY (id_subcategoria) REFERENCES R2D2_ARTURITO.SUBCATEGORIA(id_subcategoria),
+    PRIMARY KEY (id_categoria, id_subcategoria)
+);
+GO
+
+-- Tabla SUBCATEGORIA_X_PRODUCTO
+CREATE TABLE R2D2_ARTURITO.SUBCATEGORIA_X_PRODUCTO (
+    id_subcategoria BIGINT NOT NULL,
+    id_producto BIGINT NOT NULL,
+    FOREIGN KEY (id_producto) REFERENCES R2D2_ARTURITO.PRODUCTO(id_producto),
+    FOREIGN KEY (id_subcategoria) REFERENCES R2D2_ARTURITO.SUBCATEGORIA(id_subcategoria),
+    PRIMARY KEY (id_subcategoria, id_producto)
+);
+GO
+
 -- Tabla REGLA_PROMOCION
 CREATE TABLE R2D2_ARTURITO.REGLA_PROMOCION (
     id_regla INT PRIMARY KEY IDENTITY(1,1),
@@ -244,15 +281,6 @@ CREATE TABLE R2D2_ARTURITO.REGLA_PROMOCION (
 );
 GO
 
-
--- Tabla SUBCATEGORIA
-CREATE TABLE R2D2_ARTURITO.SUBCATEGORIA (
-    id_subcategoria INT PRIMARY KEY IDENTITY(1,1),
-    descripcion VARCHAR(50) NOT NULL,
-    categoria_subcategoria INT NOT NULL,
-    FOREIGN KEY (categoria_subcategoria) REFERENCES R2D2_ARTURITO.CATEGORIA(id_categoria)
-);
-GO
 
 -- Tabla DETALLE_TARJETA
 CREATE TABLE R2D2_ARTURITO.DETALLE_TARJETA (
@@ -324,25 +352,7 @@ CREATE TABLE R2D2_ARTURITO.PROMOCION_X_PRODUCTO (
 );
 GO
 
--- Tabla MARCA_X_PRODUCTO
-CREATE TABLE R2D2_ARTURITO.MARCA_X_PRODUCTO (
-    id_producto_marca INT NOT NULL,
-    id_marca_producto INT NOT NULL,
-    FOREIGN KEY (id_producto_marca) REFERENCES R2D2_ARTURITO.PRODUCTO(id_producto),
-    FOREIGN KEY (id_marca_producto) REFERENCES R2D2_ARTURITO.MARCA(id_marca),
-    PRIMARY KEY (id_producto_marca, id_marca_producto)
-);
-GO
 
--- Tabla SUBCATEGORIA_X_PRODUCTO
-CREATE TABLE R2D2_ARTURITO.SUBCATEGORIA_X_PRODUCTO (
-    id_producto_subcategoria INT NOT NULL,
-    id_subcategoria_producto INT NOT NULL,
-    FOREIGN KEY (id_producto_subcategoria) REFERENCES R2D2_ARTURITO.PRODUCTO(id_producto),
-    FOREIGN KEY (id_subcategoria_producto) REFERENCES R2D2_ARTURITO.SUBCATEGORIA(id_subcategoria),
-    PRIMARY KEY (id_producto_subcategoria, id_subcategoria_producto)
-);
-GO
 
 -- Tabla PROMOCION_APLICADA
 CREATE TABLE R2D2_ARTURITO.PROMOCION_APLICADA (
