@@ -322,26 +322,18 @@ CREATE TABLE R2D2_ARTURITO.PROMOCION_APLICADA (
 );
 GO
 
--- Tabla DETALLE_TARJETA
-CREATE TABLE R2D2_ARTURITO.DETALLE_TARJETA (
-    id_detalle_tarjeta INT PRIMARY KEY IDENTITY(1,1),
-    tarjeta INT NOT NULL,
-    cuotas SMALLINT NOT NULL,
-    cliente_detalle INT NOT NULL,
-    FOREIGN KEY (tarjeta) REFERENCES R2D2_ARTURITO.TARJETA(id_tarjeta),
-    FOREIGN KEY (cliente_detalle) REFERENCES R2D2_ARTURITO.CLIENTE(id_cliente)
-);
-GO
+/*************************************************
+ *	CREACION DE TABLAS DEPENDIENTES PARA REPRESENTAR PAGOS
+ *************************************************/
 
--- Tabla DESCUENTO
-CREATE TABLE R2D2_ARTURITO.DESCUENTO (
-    id_descuento INT PRIMARY KEY IDENTITY(1,1),
-    DESCUENTO_DESCRIPCION VARCHAR(50) NOT NULL,
-    fecha_inicio DATE NOT NULL,
-    fecha_fin DATE NOT NULL,
-    porcentaje_descuento DECIMAL(5,2) NOT NULL,
-    descuento_x_medio_pago INT NOT NULL,
-    FOREIGN KEY (descuento_x_medio_pago) REFERENCES R2D2_ARTURITO.MEDIO_PAGO(id_medio_pago)
+-- Tabla DETALLE_PAGO
+CREATE TABLE R2D2_ARTURITO.DETALLE_PAGO (
+    id_detalle_pago INT PRIMARY KEY IDENTITY(1,1),
+    cuotas SMALLINT NOT NULL,
+	id_tarjeta INT NOT NULL,
+    id_cliente INT NOT NULL,
+    FOREIGN KEY (id_tarjeta) REFERENCES R2D2_ARTURITO.TARJETA(id_tarjeta),
+    FOREIGN KEY (id_cliente) REFERENCES R2D2_ARTURITO.CLIENTE(id_cliente)
 );
 GO
 
@@ -350,25 +342,41 @@ CREATE TABLE R2D2_ARTURITO.PAGO (
     id_pago INT PRIMARY KEY IDENTITY(1,1),
     fecha DATE NOT NULL,
     monto DECIMAL(10,2) NOT NULL,
-    venta_pago INT NOT NULL,
-    medio_pago_venta INT NOT NULL,
-    detalle_venta INT NOT NULL,
-    FOREIGN KEY (venta_pago) REFERENCES R2D2_ARTURITO.VENTA(id_venta),
-    FOREIGN KEY (medio_pago_venta) REFERENCES R2D2_ARTURITO.MEDIO_PAGO(id_medio_pago),
-    FOREIGN KEY (detalle_venta) REFERENCES R2D2_ARTURITO.DETALLE_TARJETA(id_detalle_tarjeta)
+    id_venta BIGINT NOT NULL,
+    id_medio_pago INT NOT NULL,
+    id_detalle_pago INT NOT NULL,
+    FOREIGN KEY (id_venta) REFERENCES R2D2_ARTURITO.VENTA(id_venta),
+    FOREIGN KEY (id_medio_pago) REFERENCES R2D2_ARTURITO.MEDIO_PAGO(id_medio_pago),
+    FOREIGN KEY (id_detalle_pago) REFERENCES R2D2_ARTURITO.DETALLE_PAGO(id_detalle_pago)
+);
+GO
+
+-- Tabla DESCUENTO
+CREATE TABLE R2D2_ARTURITO.DESCUENTO (
+    id_descuento INT PRIMARY KEY IDENTITY(1,1),
+    descripcion VARCHAR(50) NULL,
+    fecha_inicio DATE NULL,
+    fecha_fin DATE NULL,
+    porcentaje_descuento SMALLINT NULL,
+	maximo_descuento DECIMAL(10,2) NULL,
+    id_medio_pago INT NOT NULL,
+    FOREIGN KEY (id_medio_pago) REFERENCES R2D2_ARTURITO.MEDIO_PAGO(id_medio_pago)
 );
 GO
 
 -- Tabla DESCUENTO_X_PAGO
 CREATE TABLE R2D2_ARTURITO.DESCUENTO_X_PAGO (
     id_pago INT NOT NULL,
-    descuento INT NOT NULL,
-    descuento_aplicado DECIMAL(10,2) NOT NULL,
+    id_descuento INT NOT NULL,
+    descuento_aplicado DECIMAL(10,2) NULL,
     FOREIGN KEY (id_pago) REFERENCES R2D2_ARTURITO.PAGO(id_pago),
-    FOREIGN KEY (descuento) REFERENCES R2D2_ARTURITO.DESCUENTO(id_descuento),
-    PRIMARY KEY (id_pago, descuento)
+    FOREIGN KEY (id_descuento) REFERENCES R2D2_ARTURITO.DESCUENTO(id_descuento),
+    PRIMARY KEY (id_pago, id_descuento)
 );
 GO
+
+
+
 
 
 ----------------------------------------------------------------------
