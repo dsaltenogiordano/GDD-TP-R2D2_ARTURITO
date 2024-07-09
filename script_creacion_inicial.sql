@@ -132,6 +132,7 @@ CREATE TABLE R2D2_ARTURITO.SUPERMERCADO (
     id_supermercado INT PRIMARY KEY IDENTITY(1,1),
 	nombre VARCHAR(50) NULL,
     razon_social VARCHAR(50) NULL,
+	cuit VARCHAR(20) NULL,
     ingresos_brutos VARCHAR(50) NULL,
     id_direccion INT NOT NULL,
     inicio_actividad SMALLDATETIME NULL,
@@ -504,6 +505,204 @@ END
 GO
 
 /*************************************************
+ *	CREACION DE PROCEDURES PARA MIGRACIONES PARA VENTA
+ *************************************************/
+
+CREATE PROCEDURE R2D2_ARTURITO.MIGRAR_LOCALIDAD AS
+BEGIN
+	INSERT INTO R2D2_ARTURITO.LOCALIDAD (id_provincia,nombre)
+	SELECT DISTINCT 
+		P.id_provincia AS id_provincia,
+        M.SUPER_LOCALIDAD AS nombre
+    FROM 
+        GD1C2024.gd_esquema.Maestra M
+        INNER JOIN R2D2_ARTURITO.PROVINCIA P ON P.nombre = M.SUPER_PROVINCIA
+    WHERE M.SUPER_LOCALIDAD IS NOT NULL
+    UNION
+    SELECT DISTINCT
+		P.id_provincia AS id_provincia,
+        M.SUCURSAL_LOCALIDAD AS nombre
+    FROM 
+        GD1C2024.gd_esquema.Maestra M
+        INNER JOIN R2D2_ARTURITO.PROVINCIA P ON P.nombre = M.SUCURSAL_PROVINCIA
+    WHERE M.SUCURSAL_LOCALIDAD IS NOT NULL
+    UNION
+    SELECT DISTINCT 
+		P.id_provincia AS id_provincia,
+        M.CLIENTE_LOCALIDAD AS nombre
+    FROM 
+       GD1C2024.gd_esquema.Maestra M
+       INNER JOIN R2D2_ARTURITO.PROVINCIA P ON P.nombre = M.CLIENTE_PROVINCIA
+    WHERE M.CLIENTE_LOCALIDAD IS NOT NULL
+END
+GO
+
+CREATE PROCEDURE R2D2_ARTURITO.MIGRAR_DIRECCION AS
+BEGIN
+	INSERT INTO R2D2_ARTURITO.DIRECCION (id_localidad,domicilio)
+	SELECT DISTINCT
+		L.id_localidad AS id_localidad,
+		M.SUPER_DOMICILIO AS domicilio
+	FROM GD1C2024.gd_esquema.Maestra M
+		INNER JOIN R2D2_ARTURITO.PROVINCIA P ON M.SUPER_PROVINCIA = P.nombre
+		INNER JOIN R2D2_ARTURITO.LOCALIDAD L ON M.SUPER_LOCALIDAD = L.nombre
+		AND L.id_provincia = P.id_provincia
+	UNION
+	SELECT DISTINCT
+		L.id_localidad AS id_localidad,
+		M.CLIENTE_DOMICILIO AS domicilio
+	FROM GD1C2024.gd_esquema.Maestra M
+	INNER JOIN R2D2_ARTURITO.PROVINCIA P ON M.CLIENTE_PROVINCIA = P.nombre
+	INNER JOIN R2D2_ARTURITO.LOCALIDAD L ON M.CLIENTE_LOCALIDAD = L.nombre
+	AND L.id_provincia = P.id_provincia
+	UNION
+	SELECT DISTINCT
+		L.id_localidad AS id_localidad,
+		M.SUCURSAL_DIRECCION AS domicilio
+	FROM GD1C2024.gd_esquema.Maestra M
+	INNER JOIN R2D2_ARTURITO.PROVINCIA P ON M.SUCURSAL_PROVINCIA = P.nombre
+	INNER JOIN R2D2_ARTURITO.LOCALIDAD L ON M.SUCURSAL_LOCALIDAD = L.nombre
+	AND L.id_provincia = P.id_provincia
+END
+GO
+
+CREATE PROCEDURE R2D2_ARTURITO.MIGRAR_MEDIO_PAGO AS
+BEGIN
+	INSERT INTO R2D2_ARTURITO.MEDIO_PAGO (descripcion,id_tipo_medio_pago)
+	SELECT DISTINCT
+		M.PAGO_MEDIO_PAGO AS descripcion,
+		TMP.id_tipo_medio_pago AS id_tipo_medio_pago
+	FROM GD1C2024.gd_esquema.Maestra M
+		INNER JOIN R2D2_ARTURITO.TIPO_MEDIO_PAGO TMP ON M.PAGO_TIPO_MEDIO_PAGO = TMP.descripcion
+	WHERE M.PAGO_MEDIO_PAGO IS NOT NULL
+END
+GO
+
+CREATE PROCEDURE R2D2_ARTURITO.MIGRAR_SUPERMERCADO AS
+BEGIN
+	INSERT INTO R2D2_ARTURITO.SUPERMERCADO (
+		id_direccion,
+		id_estado_fiscal,
+		ingresos_brutos,
+		inicio_actividad,
+		nombre,
+		razon_social,
+		cuit
+	)
+	SELECT DISTINCT
+		D.id_direccion AS id_direccion,
+		E.id_estado_fiscal AS id_estado_fiscal,
+		M.SUPER_IIBB AS ingresos_brutos,
+		M.SUPER_FECHA_INI_ACTIVIDAD AS inicio_actividad,
+		M.SUPER_NOMBRE AS nombre,
+		M.SUPER_RAZON_SOC AS razon_social,
+		M.SUPER_CUIT AS cuit
+	FROM GD1C2024.gd_esquema.Maestra M
+		INNER JOIN R2D2_ARTURITO.DIRECCION D ON M.SUPER_DOMICILIO = D.domicilio
+		INNER JOIN R2D2_ARTURITO.ESTADO_FISCAL E ON M.SUPER_CONDICION_FISCAL = E.descripcion
+END
+GO
+
+CREATE PROCEDURE R2D2_ARTURITO.MIGRAR_SUCURSAL AS
+BEGIN
+	INSERT INTO R2D2_ARTURITO.SUCURSAL (id_direccion,id_supermercado,nombre)
+	SELECT DISTINCT
+		D.id_direccion AS id_direccion,
+		S.id_supermercado AS id_supermercado,
+		M.SUCURSAL_NOMBRE AS nombre
+	FROM GD1C2024.gd_esquema.Maestra M
+		INNER JOIN R2D2_ARTURITO.DIRECCION D ON M.SUCURSAL_DIRECCION = D.domicilio
+		INNER JOIN R2D2_ARTURITO.SUPERMERCADO S ON M.SUPER_CUIT = S.cuit
+END
+GO
+
+CREATE PROCEDURE R2D2_ARTURITO.MIGRAR_CAJA AS
+BEGIN
+	INSERT INTO CAJA (id_sucursal,id_tipo_caja,numero)
+	SELECT DISTINCT
+		S.id_sucursal AS id_sucursal,
+		TC.id_tipo_caja AS id_tipo_caja,
+		M.CAJA_NUMERO AS numero
+	FROM GD1C2024.gd_esquema.Maestra M
+		INNER JOIN R2D2_ARTURITO.SUCURSAL S ON M.SUCURSAL_NOMBRE = S.nombre
+		INNER JOIN R2D2_ARTURITO.TIPO_CAJA TC ON M.CAJA_TIPO = TC.descripcion
+	WHERE
+		M.CAJA_NUMERO IS NOT NULL 
+		AND M.CAJA_TIPO IS NOT NULL
+END
+GO
+
+CREATE PROCEDURE R2D2_ARTURITO.MIGRAR_EMPLEADO AS
+BEGIN
+	INSERT INTO R2D2_ARTURITO.EMPLEADO (
+		apellido,
+		nombre,
+		dni,
+		email,
+		fecha_nacimiento,
+		fecha_registro,
+		telefono,
+		id_sucursal_empleado
+	)
+	SELECT DISTINCT
+		M.EMPLEADO_APELLIDO AS apellido,
+		M.EMPLEADO_NOMBRE AS nombre,
+		M.EMPLEADO_DNI AS dni,
+		M.EMPLEADO_MAIL AS email,
+		M.EMPLEADO_FECHA_NACIMIENTO AS fecha_nacimiento,
+		M.EMPLEADO_FECHA_REGISTRO AS fecha_registro,
+		M.EMPLEADO_TELEFONO AS telefono,
+		S.id_sucursal AS id_sucursal_empleado
+	FROM GD1C2024.gd_esquema.Maestra M
+		INNER JOIN R2D2_ARTURITO.SUCURSAL S ON M.SUCURSAL_NOMBRE = S.nombre
+	WHERE M.EMPLEADO_APELLIDO IS NOT NULL
+END
+GO
+
+CREATE PROCEDURE R2D2_ARTURITO.MIGRAR_VENTA AS
+BEGIN
+	INSERT INTO R2D2_ARTURITO.VENTA (
+		fecha,
+		numero_venta,
+		subtotal,
+		total_descuento_aplicado_mp,
+		total_descuento_promociones,
+		total_envio,
+		total_venta,
+		id_caja,
+		id_empleado,
+		id_sucursal,
+		id_tipo_comprobante
+	)
+	SELECT DISTINCT
+		M.TICKET_FECHA_HORA AS fecha,
+		M.TICKET_NUMERO AS numero,
+		M.TICKET_SUBTOTAL_PRODUCTOS AS subtotal,
+		M.TICKET_TOTAL_DESCUENTO_APLICADO_MP AS total_descuento_aplicado_mp,
+		M.TICKET_TOTAL_DESCUENTO_APLICADO AS total_descuento_promociones,
+		M.TICKET_TOTAL_ENVIO AS total_envio,
+		M.TICKET_TOTAL_TICKET AS total_venta,
+		C.id_caja AS id_caja,
+		E.id_empleado AS id_empleado,
+		S.id_sucursal AS id_sucursal,
+		TCOM.id_tipo_comprobante AS id_tipo_comprobante
+	FROM GD1C2024.gd_esquema.Maestra M
+		INNER JOIN R2D2_ARTURITO.SUCURSAL S 
+			ON M.SUCURSAL_NOMBRE = S.nombre
+		INNER JOIN R2D2_ARTURITO.CAJA C 
+			ON M.CAJA_NUMERO = C.numero
+			AND C.id_sucursal = S.id_sucursal
+		INNER JOIN R2D2_ARTURITO.TIPO_CAJA TC 
+			ON M.CAJA_TIPO = TC.descripcion
+			AND TC.id_tipo_caja = C.id_tipo_caja
+		INNER JOIN R2D2_ARTURITO.EMPLEADO E 
+			ON M.EMPLEADO_DNI = E.dni
+		INNER JOIN R2D2_ARTURITO.TIPO_COMPROBANTE TCOM ON M.TICKET_TIPO_COMPROBANTE = TCOM.descripcion
+	WHERE M.TICKET_NUMERO IS NOT NULL
+END
+GO
+
+/*************************************************
  *	MIGRACIONES TABLAS
  *************************************************/
 
@@ -518,3 +717,12 @@ EXEC R2D2_ARTURITO.MIGRAR_TARJETA;
 EXEC R2D2_ARTURITO.MIGRAR_TIPO_CAJA;
 EXEC R2D2_ARTURITO.MIGRAR_TIPO_COMPROBANTE;
 EXEC R2D2_ARTURITO.MIGRAR_TIPO_MEDIO_PAGO;
+
+EXEC R2D2_ARTURITO.MIGRAR_LOCALIDAD;
+EXEC R2D2_ARTURITO.MIGRAR_DIRECCION;
+EXEC R2D2_ARTURITO.MIGRAR_MEDIO_PAGO;
+EXEC R2D2_ARTURITO.MIGRAR_SUPERMERCADO;
+EXEC R2D2_ARTURITO.MIGRAR_SUCURSAL;
+EXEC R2D2_ARTURITO.MIGRAR_CAJA;
+EXEC R2D2_ARTURITO.MIGRAR_EMPLEADO;
+EXEC R2D2_ARTURITO.MIGRAR_VENTA;
