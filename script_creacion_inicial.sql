@@ -236,7 +236,7 @@ CREATE TABLE R2D2_ARTURITO.ENVIO (
 GO
 
 /*************************************************
- *	CREACION DE TABLAS DEPENDIENTES PARA GESTIONAR PRODUCTOS
+ *	CREACION DE TABLAS DEPENDIENTES PARA REPRESENTAR PRODUCTOS
  *************************************************/
 
 -- Tabla MARCA_X_PRODUCTO
@@ -269,18 +269,58 @@ CREATE TABLE R2D2_ARTURITO.SUBCATEGORIA_X_PRODUCTO (
 );
 GO
 
--- Tabla REGLA_PROMOCION
-CREATE TABLE R2D2_ARTURITO.REGLA_PROMOCION (
-    id_regla INT PRIMARY KEY IDENTITY(1,1),
-    descripcion VARCHAR(50) NOT NULL,
-    cantidad_descuentos SMALLINT NOT NULL,
-    cantidad_productos SMALLINT NOT NULL,
-    misma_marca BIT NOT NULL,
-    mismo_producto BIT NOT NULL,
-    descuento_producto DECIMAL(10,2) NOT NULL
+/*************************************************
+ *	CREACION DE TABLAS DEPENDIENTES PARA REPRESENTAR PROMOCIONES
+ *************************************************/
+
+-- Tabla PROMOCION_X_PRODUCTO
+CREATE TABLE R2D2_ARTURITO.PROMOCION_X_PRODUCTO (
+    id_promocion INT NOT NULL,
+    id_producto BIGINT NOT NULL,
+    FOREIGN KEY (id_promocion) REFERENCES R2D2_ARTURITO.PROMOCION(id_promocion),
+    FOREIGN KEY (id_producto) REFERENCES R2D2_ARTURITO.PRODUCTO(id_producto),
+    PRIMARY KEY (id_promocion, id_producto)
 );
 GO
 
+-- Tabla REGLA_PROMOCION
+CREATE TABLE R2D2_ARTURITO.REGLA_PROMOCION (
+    id_regla INT PRIMARY KEY IDENTITY(1,1),
+    descripcion VARCHAR(50) NULL,
+    cantidad_descuento SMALLINT NULL,
+	porcentaje_descuento SMALLINT NULL,
+    cantidad_productos SMALLINT NULL,
+	cantidad_maxima SMALLINT NULL,
+    misma_marca BIT NULL,
+    mismo_producto BIT NULL,
+	id_promocion INT NOT NULL,
+	FOREIGN KEY (id_promocion) REFERENCES R2D2_ARTURITO.PROMOCION(id_promocion)
+);
+GO
+
+-- Tabla ITEM_VENTA
+CREATE TABLE R2D2_ARTURITO.ITEM_VENTA (
+    id_item_venta BIGINT PRIMARY KEY IDENTITY(1,1),
+    cantidad SMALLINT NULL,
+    precio DECIMAL(10,2) NULL,
+	total DECIMAL(10,2) NULL,
+	id_venta BIGINT NOT NULL,
+	id_producto BIGINT NOT NULL,
+    FOREIGN KEY (id_venta) REFERENCES R2D2_ARTURITO.VENTA(id_venta),
+    FOREIGN KEY (id_producto) REFERENCES R2D2_ARTURITO.PRODUCTO(id_producto)
+);
+GO
+
+-- Tabla PROMOCION_APLICADA
+CREATE TABLE R2D2_ARTURITO.PROMOCION_APLICADA (
+    id_promocion_aplicada INT NOT NULL,
+    id_item_venta BIGINT NOT NULL,
+    promocion_aplciada DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (id_promocion_aplicada) REFERENCES R2D2_ARTURITO.PROMOCION(id_promocion),
+    FOREIGN KEY (id_item_venta) REFERENCES R2D2_ARTURITO.ITEM_VENTA(id_item_venta),
+    PRIMARY KEY (id_promocion_aplicada, id_item_venta)
+);
+GO
 
 -- Tabla DETALLE_TARJETA
 CREATE TABLE R2D2_ARTURITO.DETALLE_TARJETA (
@@ -319,18 +359,6 @@ CREATE TABLE R2D2_ARTURITO.PAGO (
 );
 GO
 
--- Tabla ITEM_VENTA
-CREATE TABLE R2D2_ARTURITO.ITEM_VENTA (
-    id_item_venta INT PRIMARY KEY IDENTITY(1,1),
-    detalle_venta INT NOT NULL,
-    detalle_producto INT NOT NULL,
-    cantidad SMALLINT NOT NULL,
-    precio DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (detalle_venta) REFERENCES R2D2_ARTURITO.VENTA(id_venta),
-    FOREIGN KEY (detalle_producto) REFERENCES R2D2_ARTURITO.PRODUCTO(id_producto)
-);
-GO
-
 -- Tabla DESCUENTO_X_PAGO
 CREATE TABLE R2D2_ARTURITO.DESCUENTO_X_PAGO (
     id_pago INT NOT NULL,
@@ -342,28 +370,6 @@ CREATE TABLE R2D2_ARTURITO.DESCUENTO_X_PAGO (
 );
 GO
 
--- Tabla PROMOCION_X_PRODUCTO
-CREATE TABLE R2D2_ARTURITO.PROMOCION_X_PRODUCTO (
-    id_promocion_x_producto INT NOT NULL,
-    id_producto_x_promocion INT NOT NULL,
-    FOREIGN KEY (id_promocion_x_producto) REFERENCES R2D2_ARTURITO.PROMOCION(id_promocion),
-    FOREIGN KEY (id_producto_x_promocion) REFERENCES R2D2_ARTURITO.PRODUCTO(id_producto),
-    PRIMARY KEY (id_promocion_x_producto, id_producto_x_promocion)
-);
-GO
-
-
-
--- Tabla PROMOCION_APLICADA
-CREATE TABLE R2D2_ARTURITO.PROMOCION_APLICADA (
-    id_promocion_aplicada INT NOT NULL,
-    id_item_venta INT NOT NULL,
-    promocion_aplciada DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (id_promocion_aplicada) REFERENCES R2D2_ARTURITO.PROMOCION(id_promocion),
-    FOREIGN KEY (id_item_venta) REFERENCES R2D2_ARTURITO.ITEM_VENTA(id_item_venta),
-    PRIMARY KEY (id_promocion_aplicada, id_item_venta)
-);
-GO
 
 ----------------------------------------------------------------------
 -- MIGRACION DE TABLAS 
