@@ -314,12 +314,12 @@ GO
 
 -- Tabla PROMOCION_APLICADA
 CREATE TABLE R2D2_ARTURITO.PROMOCION_APLICADA (
-    id_promocion_aplicada INT NOT NULL,
+    id_promocion INT NOT NULL,
     id_item_venta BIGINT NOT NULL,
-    promocion_aplciada DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (id_promocion_aplicada) REFERENCES R2D2_ARTURITO.PROMOCION(id_promocion),
+    promocion_aplicada DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (id_promocion) REFERENCES R2D2_ARTURITO.PROMOCION(id_promocion),
     FOREIGN KEY (id_item_venta) REFERENCES R2D2_ARTURITO.ITEM_VENTA(id_item_venta),
-    PRIMARY KEY (id_promocion_aplicada, id_item_venta)
+    PRIMARY KEY (id_promocion, id_item_venta)
 );
 GO
 
@@ -375,7 +375,6 @@ CREATE TABLE R2D2_ARTURITO.DESCUENTO_X_PAGO (
     PRIMARY KEY (id_pago, id_descuento)
 );
 GO
-
 
 /*************************************************
  *	CREACION DE PROCEDURES PARA MIGRACIONES TABLAS ATOMICAS
@@ -837,6 +836,119 @@ END
 GO
 
 /*************************************************
+ *	CREACION DE PROCEDURES PARA MIGRACIONES PARA PROMOCIONES
+ *************************************************/
+
+CREATE PROCEDURE R2D2_ARTURITO.MIGRAR_PROMOCION_X_PRODUCTO AS
+BEGIN
+	INSERT INTO R2D2_ARTURITO.PROMOCION_X_PRODUCTO (id_producto,id_promocion)
+	SELECT DISTINCT
+		SUBSTRING(M.PRODUCTO_NOMBRE,8,12) AS id_producto,
+		M.PROMO_CODIGO AS id_promocion
+	FROM GD1C2024.gd_esquema.Maestra M
+	WHERE
+		M.PRODUCTO_NOMBRE IS NOT NULL
+		AND M.PROMO_CODIGO IS NOT NULL
+END
+GO
+
+CREATE PROCEDURE R2D2_ARTURITO.MIGRAR_REGLA_PROMOCION AS
+BEGIN
+	INSERT INTO R2D2_ARTURITO.REGLA_PROMOCION (
+		cantidad_descuento,
+		cantidad_productos,
+		cantidad_maxima,
+		descripcion,
+		misma_marca,
+		mismo_producto,
+		porcentaje_descuento,
+		id_promocion
+	)
+	SELECT DISTINCT
+		M.REGLA_CANT_APLICA_DESCUENTO AS cantidad_descuento,
+		M.REGLA_CANT_APLICABLE_REGLA AS cantidad_productos,
+		M.REGLA_CANT_MAX_PROD AS cantidad_maxima,
+		M.REGLA_DESCRIPCION AS descripcion,
+		M.REGLA_APLICA_MISMA_MARCA AS misma_marca,
+		M.REGLA_APLICA_MISMO_PROD AS mismo_producto,
+		M.REGLA_DESCUENTO_APLICABLE_PROD AS porcentaje_descuento,
+		P.id_promocion AS id_promocion
+	FROM GD1C2024.gd_esquema.Maestra M
+		INNER JOIN R2D2_ARTURITO.PROMOCION P ON M.PROMO_CODIGO = P.id_promocion 
+	WHERE M.REGLA_CANT_MAX_PROD IS NOT NULL
+
+END
+GO
+
+CREATE PROCEDURE R2D2_ARTURITO.MIGRAR_ITEM_VENTA AS
+BEGIN
+	INSERT INTO ITEM_VENTA (cantidad,precio,total,id_producto,id_venta)
+	SELECT DISTINCT
+		M.TICKET_DET_CANTIDAD AS cantidad,
+		M.TICKET_DET_PRECIO AS precio,
+		M.TICKET_DET_TOTAL AS total,
+		P.id_producto AS id_producto,
+		V.id_venta AS id_venta
+	FROM GD1C2024.gd_esquema.Maestra M
+		INNER JOIN R2D2_ARTURITO.PRODUCTO P 
+			ON SUBSTRING(M.PRODUCTO_NOMBRE,8,12) = P.id_producto
+		INNER JOIN R2D2_ARTURITO.SUCURSAL S
+			ON M.SUCURSAL_NOMBRE = S.nombre
+		INNER JOIN R2D2_ARTURITO.CAJA C
+			ON M.CAJA_NUMERO = C.numero
+		INNER JOIN R2D2_ARTURITO.TIPO_COMPROBANTE TC
+			ON M.TICKET_TIPO_COMPROBANTE = TC.descripcion
+		INNER JOIN R2D2_ARTURITO.VENTA V 
+			ON M.TICKET_NUMERO = V.numero_venta
+			AND M.TICKET_SUBTOTAL_PRODUCTOS = V.subtotal
+			AND M.TICKET_TOTAL_DESCUENTO_APLICADO = V.total_descuento_promociones
+			AND M.TICKET_TOTAL_DESCUENTO_APLICADO_MP = V.total_descuento_aplicado_mp
+			AND M.TICKET_TOTAL_ENVIO = V.total_envio
+			AND M.TICKET_TOTAL_TICKET = V.total_venta
+			AND M.TICKET_FECHA_HORA = V.fecha
+			AND S.id_sucursal = V.id_sucursal
+			AND C.id_caja = V.id_caja
+			AND TC.id_tipo_comprobante = V.id_tipo_comprobante
+	WHERE M.TICKET_DET_TOTAL IS NOT NULL
+END
+GO
+
+CREATE PROCEDURE R2D2_ARTURITO.MIGRAR_PROMOCION_APLICADA AS
+BEGIN
+	INSERT INTO R2D2_ARTURITO.PROMOCION_APLICADA (
+		id_promocion,
+		id_item_venta,
+		promocion_aplicada
+	)
+	SELECT DISTINCT
+		P.id_promocion AS id_promocion,
+		IV.id_item_venta AS id_item_venta,
+		M.PROMO_APLICADA_DESCUENTO AS promocion_aplicada
+	FROM GD1C2024.gd_esquema.Maestra M
+		INNER JOIN R2D2_ARTURITO.PROMOCION P ON M.PROMO_CODIGO = P.id_promocion
+		INNER JOIN R2D2_ARTURITO.SUCURSAL S ON M.SUCURSAL_NOMBRE = S.nombre
+		INNER JOIN R2D2_ARTURITO.TIPO_COMPROBANTE TC ON M.TICKET_TIPO_COMPROBANTE = TC.descripcion 
+		INNER JOIN R2D2_ARTURITO.VENTA V
+			ON M.TICKET_NUMERO = V.numero_venta
+			AND M.TICKET_FECHA_HORA = V.fecha
+			AND M.TICKET_TOTAL_DESCUENTO_APLICADO = V.total_descuento_promociones
+			AND M.TICKET_TOTAL_DESCUENTO_APLICADO_MP = V.total_descuento_aplicado_mp
+			AND M.TICKET_TOTAL_ENVIO = V.total_envio
+			AND M.TICKET_SUBTOTAL_PRODUCTOS = V.subtotal
+			AND M.TICKET_TOTAL_TICKET = V.total_venta
+			AND S.id_sucursal = V.id_sucursal
+			AND TC.id_tipo_comprobante = V.id_tipo_comprobante
+		INNER JOIN R2D2_ARTURITO.ITEM_VENTA IV
+			ON SUBSTRING(M.PRODUCTO_NOMBRE,8,12) = IV.id_producto
+			AND M.TICKET_DET_CANTIDAD = IV.cantidad
+			AND M.TICKET_DET_PRECIO = IV.precio
+			AND M.TICKET_DET_TOTAL = IV.total
+			AND V.id_venta = IV.id_venta
+	WHERE M.PROMO_CODIGO IS NOT NULL
+END
+GO
+
+/*************************************************
  *	MIGRACIONES TABLAS
  *************************************************/
 
@@ -872,3 +984,9 @@ EXEC R2D2_ARTURITO.MIGRAR_ENVIO;
 EXEC R2D2_ARTURITO.MIGRAR_MARCA_X_PRODUCTO;
 EXEC R2D2_ARTURITO.MIGRAR_SUBCATEGORIA_X_CATEGORIA;
 EXEC R2D2_ARTURITO.MIGRAR_SUBCATEGORIA_X_PRODUCTO;
+
+-- MIGRACIONES TABLAS PARA PROMOCIONES
+EXEC R2D2_ARTURITO.MIGRAR_PROMOCION_X_PRODUCTO;
+EXEC R2D2_ARTURITO.MIGRAR_REGLA_PROMOCION;
+EXEC R2D2_ARTURITO.MIGRAR_ITEM_VENTA;
+EXEC R2D2_ARTURITO.MIGRAR_PROMOCION_APLICADA;
