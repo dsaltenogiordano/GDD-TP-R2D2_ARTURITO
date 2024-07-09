@@ -55,7 +55,7 @@ GO
 
 -- Tabla PROVINCIA
 CREATE TABLE R2D2_ARTURITO.PROVINCIA (
-    id_provincia BIGINT PRIMARY KEY IDENTITY(1,1),
+    id_provincia INT PRIMARY KEY IDENTITY(1,1),
     nombre VARCHAR(50) NULL
 );
 GO
@@ -95,9 +95,9 @@ GO
 
 -- Tabla LOCALIDAD
 CREATE TABLE R2D2_ARTURITO.LOCALIDAD (
-    id_localidad SMALLINT PRIMARY KEY IDENTITY(1,1),
+    id_localidad INT PRIMARY KEY IDENTITY(1,1),
     nombre VARCHAR(50) NULL,
-    id_provincia SMALLINT NOT NULL,
+    id_provincia INT NOT NULL,
     FOREIGN KEY (id_provincia) REFERENCES R2D2_ARTURITO.PROVINCIA(id_provincia)
 );
 GO
@@ -106,7 +106,7 @@ GO
 CREATE TABLE R2D2_ARTURITO.DIRECCION (
     id_direccion INT PRIMARY KEY IDENTITY(1,1),
     domicilio VARCHAR(255) NULL,
-    id_localidad SMALLINT NOT NULL,
+    id_localidad INT NOT NULL,
     FOREIGN KEY (id_localidad) REFERENCES R2D2_ARTURITO.LOCALIDAD(id_localidad)
 );
 GO
@@ -116,7 +116,7 @@ CREATE TABLE R2D2_ARTURITO.MEDIO_PAGO (
     id_medio_pago INT PRIMARY KEY IDENTITY(1,1),
 	descripcion VARCHAR(50) NOT NULL,
     id_tipo_medio_pago INT NOT NULL,
-    FOREIGN KEY (TIPO_MEDIO_PAGO) REFERENCES R2D2_ARTURITO.TIPO_MEDIO_PAGO(id_tipo_medio_pago)
+    FOREIGN KEY (id_tipo_medio_pago) REFERENCES R2D2_ARTURITO.TIPO_MEDIO_PAGO(id_tipo_medio_pago)
 );
 GO
 
@@ -228,7 +228,7 @@ CREATE TABLE R2D2_ARTURITO.ENVIO (
     costo DECIMAL(10,2) NULL,
     id_estado_envio INT NOT NULL,
     id_cliente INT NOT NULL,
-	id_venta INT NOT NULL,
+	id_venta BIGINT NOT NULL,
     FOREIGN KEY (id_estado_envio) REFERENCES R2D2_ARTURITO.ESTADO_ENVIO(id_estado_envio),
     FOREIGN KEY (id_cliente) REFERENCES R2D2_ARTURITO.CLIENTE(id_cliente),
 	FOREIGN KEY (id_venta) REFERENCES R2D2_ARTURITO.VENTA(id_venta)
@@ -241,7 +241,7 @@ GO
 
 -- Tabla MARCA_X_PRODUCTO
 CREATE TABLE R2D2_ARTURITO.MARCA_X_PRODUCTO (
-    id_marca INT NOT NULL,
+    id_marca BIGINT NOT NULL,
     id_producto BIGINT NOT NULL,
     FOREIGN KEY (id_producto) REFERENCES R2D2_ARTURITO.PRODUCTO(id_producto),
     FOREIGN KEY (id_marca) REFERENCES R2D2_ARTURITO.MARCA(id_marca),
@@ -378,7 +378,7 @@ GO
 
 
 
-
+/*
 ----------------------------------------------------------------------
 -- MIGRACION DE TABLAS 
 ----------------------------------------------------------------------
@@ -733,3 +733,4 @@ EXEC R2D2_ARTURITO.MigrarTarjeta;
 EXEC R2D2_ARTURITO.MigrarSupermercado;
 EXEC R2D2_ARTURITO.MigrarCliente;
 EXEC R2D2_ARTURITO.MigrarSucursal;
+*/
