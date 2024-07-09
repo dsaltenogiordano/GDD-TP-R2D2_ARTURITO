@@ -17,14 +17,14 @@ GO
 
 -- Tabla ESTADO_ENVIO
 CREATE TABLE R2D2_ARTURITO.ESTADO_ENVIO (
-    id_estado_envio INT PRIMARY KEY IDENTITY(1,1),
+    id_estado_envio INT PRIMARY KEY IDENTITY(0,1),
     descripcion VARCHAR(50)NOT NULL
 );
 GO
 
 -- Tabla ESTADO_FISCAL
 CREATE TABLE R2D2_ARTURITO.ESTADO_FISCAL (
-    id_estado_fiscal INT PRIMARY KEY IDENTITY(1,1),
+    id_estado_fiscal INT PRIMARY KEY IDENTITY(0,1),
     descripcion VARCHAR(255) NULL
 );
 GO
@@ -55,7 +55,7 @@ GO
 
 -- Tabla PROVINCIA
 CREATE TABLE R2D2_ARTURITO.PROVINCIA (
-    id_provincia INT PRIMARY KEY IDENTITY(1,1),
+    id_provincia INT PRIMARY KEY IDENTITY(0,1),
     nombre VARCHAR(50) NULL
 );
 GO
@@ -69,7 +69,7 @@ GO
 
 -- Tabla TARJETA
 CREATE TABLE R2D2_ARTURITO.TARJETA (
-    id_tarjeta INT PRIMARY KEY IDENTITY(1,1),
+    id_tarjeta INT PRIMARY KEY IDENTITY(0,1),
     numero CHAR(16) NULL,
     fecha_vencimiento DATE NULL
 );
@@ -77,21 +77,21 @@ GO
 
 -- Tabla TIPO_CAJA
 CREATE TABLE R2D2_ARTURITO.TIPO_CAJA (
-    id_tipo_caja SMALLINT PRIMARY KEY IDENTITY(1,1),
+    id_tipo_caja SMALLINT PRIMARY KEY IDENTITY(0,1),
     descripcion VARCHAR(50) NULL
 );
 GO
 
 -- Tabla TIPO_COMPROBANTE
 CREATE TABLE R2D2_ARTURITO.TIPO_COMPROBANTE (
-    id_tipo_comprobante SMALLINT PRIMARY KEY IDENTITY(1,1),
+    id_tipo_comprobante SMALLINT PRIMARY KEY IDENTITY(0,1),
     descripcion VARCHAR(50) NULL
 );
 GO
 
 -- Tabla TIPO_MEDIO_PAGO
 CREATE TABLE R2D2_ARTURITO.TIPO_MEDIO_PAGO (
-    id_tipo_medio_pago INT PRIMARY KEY IDENTITY(1,1),
+    id_tipo_medio_pago INT PRIMARY KEY IDENTITY(0,1),
     descripcion VARCHAR(50) NULL
 );
 GO
@@ -102,7 +102,7 @@ GO
 
 -- Tabla LOCALIDAD
 CREATE TABLE R2D2_ARTURITO.LOCALIDAD (
-    id_localidad INT PRIMARY KEY IDENTITY(1,1),
+    id_localidad INT PRIMARY KEY IDENTITY(0,1),
     nombre VARCHAR(50) NULL,
     id_provincia INT NOT NULL,
     FOREIGN KEY (id_provincia) REFERENCES R2D2_ARTURITO.PROVINCIA(id_provincia)
@@ -111,7 +111,7 @@ GO
 
 -- Tabla DIRECCION
 CREATE TABLE R2D2_ARTURITO.DIRECCION (
-    id_direccion INT PRIMARY KEY IDENTITY(1,1),
+    id_direccion INT PRIMARY KEY IDENTITY(0,1),
     domicilio VARCHAR(255) NULL,
     id_localidad INT NOT NULL,
     FOREIGN KEY (id_localidad) REFERENCES R2D2_ARTURITO.LOCALIDAD(id_localidad)
@@ -120,7 +120,7 @@ GO
 
 -- Tabla MEDIO_PAGO
 CREATE TABLE R2D2_ARTURITO.MEDIO_PAGO (
-    id_medio_pago INT PRIMARY KEY IDENTITY(1,1),
+    id_medio_pago INT PRIMARY KEY IDENTITY(0,1),
 	descripcion VARCHAR(50) NOT NULL,
     id_tipo_medio_pago INT NOT NULL,
     FOREIGN KEY (id_tipo_medio_pago) REFERENCES R2D2_ARTURITO.TIPO_MEDIO_PAGO(id_tipo_medio_pago)
@@ -129,7 +129,7 @@ GO
 
 -- Tabla SUPERMERCADO
 CREATE TABLE R2D2_ARTURITO.SUPERMERCADO (
-    id_supermercado INT PRIMARY KEY IDENTITY(1,1),
+    id_supermercado INT PRIMARY KEY IDENTITY(0,1),
 	nombre VARCHAR(50) NULL,
     razon_social VARCHAR(50) NULL,
 	cuit VARCHAR(20) NULL,
@@ -144,7 +144,7 @@ GO
 
 -- Tabla SUCURSAL
 CREATE TABLE R2D2_ARTURITO.SUCURSAL (
-    id_sucursal INT PRIMARY KEY IDENTITY(1,1),
+    id_sucursal INT PRIMARY KEY IDENTITY(0,1),
     nombre VARCHAR(50) NULL,
     id_direccion INT NOT NULL,
     id_supermercado INT NOT NULL,
@@ -155,7 +155,7 @@ GO
 
 -- Tabla CAJA
 CREATE TABLE R2D2_ARTURITO.CAJA (
-    id_caja INT PRIMARY KEY IDENTITY(1,1),
+    id_caja INT PRIMARY KEY IDENTITY(0,1),
     numero SMALLINT NOT NULL,
     id_tipo_caja SMALLINT NOT NULL,
 	id_sucursal INT NOT NULL,
@@ -166,7 +166,7 @@ GO
 
 -- Tabla EMPLEADO
 CREATE TABLE R2D2_ARTURITO.EMPLEADO (
-	id_empleado INT PRIMARY KEY IDENTITY(1,1),
+	id_empleado INT PRIMARY KEY IDENTITY(0,1),
     nombre VARCHAR(50) NULL,
     apellido VARCHAR(50) NULL,
 	dni VARCHAR(18) NULL,
@@ -181,7 +181,7 @@ GO
 
 -- Tabla VENTA
 CREATE TABLE R2D2_ARTURITO.VENTA (
-    id_venta BIGINT PRIMARY KEY IDENTITY(1,1),
+    id_venta BIGINT PRIMARY KEY IDENTITY(0,1),
 	numero_venta BIGINT NOT NULL,
     fecha SMALLDATETIME NULL,
 	subtotal DECIMAL(10,2) NULL,
@@ -206,7 +206,7 @@ GO
 
 -- Tabla CLIENTE
 CREATE TABLE R2D2_ARTURITO.CLIENTE (
-    id_cliente INT PRIMARY KEY IDENTITY(1,1),
+    id_cliente INT PRIMARY KEY IDENTITY(0,1),
     nombre VARCHAR(50) NULL,
     apellido VARCHAR(50) NULL,
     dni VARCHAR(18) NULL,
@@ -221,7 +221,7 @@ GO
 
 -- Tabla ENVIO
 CREATE TABLE R2D2_ARTURITO.ENVIO (
-    id_envio INT PRIMARY KEY IDENTITY(1,1),
+    id_envio INT PRIMARY KEY IDENTITY(0,1),
     fecha_programada DATE NULL,
     hora_inicio SMALLINT NULL,
     hora_fin SMALLINT NULL,
@@ -286,7 +286,7 @@ GO
 
 -- Tabla REGLA_PROMOCION
 CREATE TABLE R2D2_ARTURITO.REGLA_PROMOCION (
-    id_regla INT PRIMARY KEY IDENTITY(1,1),
+    id_regla INT PRIMARY KEY IDENTITY(0,1),
     descripcion VARCHAR(50) NULL,
     cantidad_descuento SMALLINT NULL,
 	porcentaje_descuento SMALLINT NULL,
@@ -301,7 +301,7 @@ GO
 
 -- Tabla ITEM_VENTA
 CREATE TABLE R2D2_ARTURITO.ITEM_VENTA (
-    id_item_venta BIGINT PRIMARY KEY IDENTITY(1,1),
+    id_item_venta BIGINT PRIMARY KEY IDENTITY(0,1),
     cantidad SMALLINT NULL,
     precio DECIMAL(10,2) NULL,
 	total DECIMAL(10,2) NULL,
@@ -329,7 +329,7 @@ GO
 
 -- Tabla DETALLE_PAGO
 CREATE TABLE R2D2_ARTURITO.DETALLE_PAGO (
-    id_detalle_pago INT PRIMARY KEY IDENTITY(1,1),
+    id_detalle_pago INT PRIMARY KEY IDENTITY(0,1),
     cuotas SMALLINT NOT NULL,
 	id_tarjeta INT NOT NULL,
     id_cliente INT NULL,
@@ -340,7 +340,7 @@ GO
 
 -- Tabla PAGO
 CREATE TABLE R2D2_ARTURITO.PAGO (
-    id_pago INT PRIMARY KEY IDENTITY(1,1),
+    id_pago INT PRIMARY KEY IDENTITY(0,1),
     fecha DATE NOT NULL,
     monto DECIMAL(10,2) NOT NULL,
     id_venta BIGINT NOT NULL,
