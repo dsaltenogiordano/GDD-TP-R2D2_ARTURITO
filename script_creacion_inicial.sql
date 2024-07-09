@@ -332,7 +332,7 @@ CREATE TABLE R2D2_ARTURITO.DETALLE_PAGO (
     id_detalle_pago INT PRIMARY KEY IDENTITY(1,1),
     cuotas SMALLINT NOT NULL,
 	id_tarjeta INT NOT NULL,
-    id_cliente INT NOT NULL,
+    id_cliente INT NULL,
     FOREIGN KEY (id_tarjeta) REFERENCES R2D2_ARTURITO.TARJETA(id_tarjeta),
     FOREIGN KEY (id_cliente) REFERENCES R2D2_ARTURITO.CLIENTE(id_cliente)
 );
@@ -354,7 +354,7 @@ GO
 
 -- Tabla DESCUENTO
 CREATE TABLE R2D2_ARTURITO.DESCUENTO (
-    id_descuento INT PRIMARY KEY IDENTITY(1,1),
+    id_descuento INT PRIMARY KEY,
     descripcion VARCHAR(50) NULL,
     fecha_inicio DATE NULL,
     fecha_fin DATE NULL,
@@ -949,6 +949,89 @@ END
 GO
 
 /*************************************************
+ *	CREACION DE PROCEDURES PARA MIGRACIONES PARA PAGOS
+ *************************************************/
+
+CREATE PROCEDURE R2D2_ARTURITO.MIGRAR_DETALLE_PAGO AS
+BEGIN
+	INSERT INTO R2D2_ARTURITO.DETALLE_PAGO (id_cliente,id_tarjeta,cuotas)
+	SELECT DISTINCT
+		C.id_cliente AS id_cliente,
+		T.id_tarjeta AS id_tarjeta,
+		M.PAGO_TARJETA_CUOTAS AS cuotas
+	FROM GD1C2024.gd_esquema.Maestra M
+		INNER JOIN R2D2_ARTURITO.TARJETA T
+			ON M.PAGO_TARJETA_NRO = T.numero
+			AND M.PAGO_TARJETA_FECHA_VENC = T.fecha_vencimiento
+		LEFT JOIN GD1C2024.gd_esquema.Maestra maestraJoin
+			ON M.TICKET_NUMERO = maestraJoin.TICKET_NUMERO
+			AND M.TICKET_FECHA_HORA = maestraJoin.TICKET_FECHA_HORA
+			AND M.TICKET_TIPO_COMPROBANTE = maestraJoin.TICKET_TIPO_COMPROBANTE
+			AND maestraJoin.CLIENTE_DNI IS NOT NULL
+		LEFT JOIN R2D2_ARTURITO.CLIENTE C
+			ON maestraJoin.CLIENTE_DNI = C.dni
+END
+GO
+
+CREATE PROCEDURE R2D2_ARTURITO.MIGRAR_DESCUENTO AS
+BEGIN
+	INSERT INTO R2D2_ARTURITO.DESCUENTO (
+		id_descuento,
+		descripcion,
+		fecha_inicio,
+		fecha_fin,
+		maximo_descuento,
+		porcentaje_descuento,
+		id_medio_pago
+	)
+	SELECT DISTINCT
+		M.DESCUENTO_CODIGO AS id_descuento,
+		M.DESCUENTO_DESCRIPCION AS descripcion,
+		M.DESCUENTO_FECHA_INICIO AS fecha_inicio,
+		M.DESCUENTO_FECHA_FIN AS fecha_fin,
+		M.DESCUENTO_TOPE AS maximo_descuento,
+		M.DESCUENTO_PORCENTAJE_DESC AS porcentaje_descuento,
+		MP.id_medio_pago AS id_medio_pago
+	FROM GD1C2024.gd_esquema.Maestra M
+		INNER JOIN R2D2_ARTURITO.TIPO_MEDIO_PAGO TMP
+			ON M.PAGO_TIPO_MEDIO_PAGO = TMP.descripcion
+		INNER JOIN R2D2_ARTURITO.MEDIO_PAGO MP 
+			ON M.PAGO_MEDIO_PAGO = MP.descripcion
+			AND TMP.id_tipo_medio_pago = MP.id_tipo_medio_pago
+	WHERE M.DESCUENTO_CODIGO IS NOT NULL
+END
+GO
+
+CREATE PROCEDURE R2D2_ARTURITO.MIGRAR_DESCUENTO_X_PAGO AS
+BEGIN
+	INSERT INTO R2D2_ARTURITO.DESCUENTO_X_PAGO (id_descuento,id_pago,descuento_aplicado)
+	SELECT DISTINCT
+		D.id_descuento AS id_descuento,
+		P.id_pago AS id_pago,
+		M.PAGO_DESCUENTO_APLICADO AS descuento_aplicado
+	FROM GD1C2024.gd_esquema.Maestra M
+		INNER JOIN R2D2_ARTURITO.SUCURSAL S
+			ON M.SUCURSAL_NOMBRE = S.nombre
+		INNER JOIN R2D2_ARTURITO.TIPO_COMPROBANTE TC
+			ON M.TICKET_TIPO_COMPROBANTE = TC.descripcion
+		INNER JOIN R2D2_ARTURITO.VENTA V
+			ON M.TICKET_NUMERO = V.numero_venta
+			AND M.TICKET_FECHA_HORA = V.fecha
+			AND M.TICKET_SUBTOTAL_PRODUCTOS = V.subtotal
+			AND M.TICKET_TOTAL_DESCUENTO_APLICADO = V.total_descuento_promociones
+			AND M.TICKET_TOTAL_DESCUENTO_APLICADO_MP = V.total_descuento_aplicado_mp
+			AND M.TICKET_TOTAL_ENVIO = V.total_envio
+			AND M.TICKET_TOTAL_TICKET = V.total_venta
+			AND TC.id_tipo_comprobante = V.id_tipo_comprobante
+			AND S.id_sucursal = V.id_sucursal
+		INNER JOIN R2D2_ARTURITO.PAGO P
+			ON V.id_venta = P.id_venta
+		INNER JOIN R2D2_ARTURITO.DESCUENTO D
+			ON M.DESCUENTO_CODIGO = D.id_descuento
+END
+GO
+
+/*************************************************
  *	MIGRACIONES TABLAS
  *************************************************/
 
@@ -990,3 +1073,7 @@ EXEC R2D2_ARTURITO.MIGRAR_PROMOCION_X_PRODUCTO;
 EXEC R2D2_ARTURITO.MIGRAR_REGLA_PROMOCION;
 EXEC R2D2_ARTURITO.MIGRAR_ITEM_VENTA;
 EXEC R2D2_ARTURITO.MIGRAR_PROMOCION_APLICADA;
+
+-- MIGRACIONES PARA PAGOS
+EXEC R2D2_ARTURITO.MIGRAR_DETALLE_PAGO;
+EXEC R2D2_ARTURITO.MIGRAR_DESCUENTO;
