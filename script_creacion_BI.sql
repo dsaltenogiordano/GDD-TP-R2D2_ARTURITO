@@ -7,7 +7,7 @@ IF EXISTS (SELECT 1 FROM SYS.OBJECTS WHERE schema_id = SCHEMA_ID('R2D2_ARTURITO'
         DECLARE @SQL_FN NVARCHAR(MAX) = N'';
 
         SELECT @SQL_FN += N'
-	DROP FUNCTION R2D2_ARTURITO.' + name  + ';'
+		DROP FUNCTION R2D2_ARTURITO.' + name  + ';'
         FROM sys.objects WHERE type = 'FN'
                            AND schema_id = SCHEMA_ID('R2D2_ARTURITO')
                            AND name LIKE 'BI[_]%'
@@ -16,7 +16,7 @@ IF EXISTS (SELECT 1 FROM SYS.OBJECTS WHERE schema_id = SCHEMA_ID('R2D2_ARTURITO'
         DECLARE @SQL_SP NVARCHAR(MAX) = N'';
 
         SELECT @SQL_SP += N'
-	DROP PROCEDURE R2D2_ARTURITO.' + name  + ';'
+		DROP PROCEDURE R2D2_ARTURITO.' + name  + ';'
         FROM sys.objects WHERE type = 'P'
                            AND schema_id = SCHEMA_ID('R2D2_ARTURITO')
                            AND name LIKE 'BI[_]%'
@@ -26,186 +26,144 @@ IF EXISTS (SELECT 1 FROM SYS.OBJECTS WHERE schema_id = SCHEMA_ID('R2D2_ARTURITO'
         DECLARE @SQL_FK NVARCHAR(MAX) = N'';
 
         SELECT @SQL_FK += N'
-	ALTER TABLE R2D2_ARTURITO.' + OBJECT_NAME(PARENT_OBJECT_ID) + ' DROP CONSTRAINT ' + OBJECT_NAME(OBJECT_ID) + ';'
+		ALTER TABLE R2D2_ARTURITO.' + OBJECT_NAME(PARENT_OBJECT_ID) + ' DROP CONSTRAINT ' + OBJECT_NAME(OBJECT_ID) + ';'
         FROM SYS.OBJECTS
         WHERE TYPE_DESC LIKE '%CONSTRAINT'
           AND type = 'F'
           AND schema_id = SCHEMA_ID('R2D2_ARTURITO')
           AND OBJECT_NAME(PARENT_OBJECT_ID) LIKE 'BI[_]%'
-        --PRINT @SQL_FK
         EXECUTE(@SQL_FK)
 
 --------------------------------------  E L I M I N A R   P K  --------------------------------------
         DECLARE @SQL_PK NVARCHAR(MAX) = N'';
-
         SELECT @SQL_PK += N'
-	ALTER TABLE R2D2_ARTURITO.' + OBJECT_NAME(PARENT_OBJECT_ID) + ' DROP CONSTRAINT ' + OBJECT_NAME(OBJECT_ID) + ';'
+		ALTER TABLE R2D2_ARTURITO.' + OBJECT_NAME(PARENT_OBJECT_ID) + ' DROP CONSTRAINT ' + OBJECT_NAME(OBJECT_ID) + ';'
         FROM SYS.OBJECTS
         WHERE TYPE_DESC LIKE '%CONSTRAINT'
           AND type = 'PK'
           AND schema_id = SCHEMA_ID('R2D2_ARTURITO')
           AND OBJECT_NAME(PARENT_OBJECT_ID) LIKE 'BI[_]%'
-
-        --PRINT @SQL_PK
         EXECUTE(@SQL_PK)
 
 ------------------------------------  D R O P    T A B L E S   -----------------------------------
         DECLARE @SQL_DROP NVARCHAR(MAX) = N'';
-
         SELECT @SQL_DROP += N'
-	DROP TABLE R2D2_ARTURITO.' + TABLE_NAME + ';'
+		DROP TABLE R2D2_ARTURITO.' + TABLE_NAME + ';'
         FROM INFORMATION_SCHEMA.TABLES
         WHERE TABLE_SCHEMA = 'R2D2_ARTURITO'
           AND TABLE_TYPE = 'BASE TABLE'
           AND TABLE_NAME LIKE 'BI[_]%'
-
-        --PRINT @SQL_DROP
         EXECUTE(@SQL_DROP)
 
 ---------------------------------------- D R O P   V I E W S  -------------------------------------
         DECLARE @SQL_VIEW NVARCHAR(MAX) = N'';
-
         SELECT @SQL_VIEW += N'
-	DROP VIEW R2D2_ARTURITO.' + TABLE_NAME + ';'
+		DROP VIEW R2D2_ARTURITO.' + TABLE_NAME + ';'
         FROM INFORMATION_SCHEMA.TABLES
         WHERE TABLE_SCHEMA = 'R2D2_ARTURITO'
           AND TABLE_TYPE = 'VIEW'
           AND TABLE_NAME LIKE 'BI[_]%'
-
-        --PRINT @SQL_VIEW
         EXECUTE(@SQL_VIEW)
-
     END
 GO
 
------------------------------------------ C R E A C I O N  T A B L A S -------------------------------------
+/*************************************************
+ *	CREACION TABLAS DE DIMENSIONES BASICAS SEGÚN ENUNCIADO
+ *************************************************/
 
---------------------------------------------- D I M E N S I O N E S ----------------------------------------
-BEGIN TRANSACTION
+CREATE SCHEMA BI_R2D2_ARTURITO
+GO
 
 --Tiempo
 CREATE TABLE R2D2_ARTURITO.BI_TIEMPO(
-	id decimal(18, 0) IDENTITY PRIMARY KEY,
-	anio integer NOT NULL,
-	cuatrimestre integer NOT NULL,
-	mes integer NOT NULL
-)
+	id_tiempo INT PRIMARY KEY IDENTITY(0,1),
+	anio INT NULL,
+	cuatrimestre INT NULL,
+	mes INT NULL
+);
+GO
 
-
--- CLIENTE Ubicacion
-CREATE TABLE R2D2_ARTURITO.BI_CLIENTE_UBICACION(
-	id decimal(18, 0) IDENTITY PRIMARY KEY,
-	localidad nvarchar(50),
-	provincia nvarchar(50) 
-
-)
+--Ubicacion
+CREATE TABLE R2D2_ARTURITO.BI_UBICACION(
+	id_ubicacion INT PRIMARY KEY IDENTITY(0,1),
+	id_localidad INT NULL,
+	localidad VARCHAR(50) NULL,
+	id_provincia INT NULL,
+	provincia VARCHAR(50) NULL
+);
+GO
 
 --Sucursal
 CREATE TABLE R2D2_ARTURITO.BI_SUCURSAL(
-	id decimal(18, 0) IDENTITY PRIMARY KEY,
-	nombre  varchar(50) NOT NULL
-)
+	id_sucursal INT PRIMARY KEY IDENTITY(0,1),
+	nombre VARCHAR(50) NULL
+);
+GO
 
 --Rango Etario
 CREATE TABLE R2D2_ARTURITO.BI_RANGO_ETARIO(
-	id decimal(18, 0) IDENTITY PRIMARY KEY,
-	rango_etario nvarchar(50) NOT NULL
-)
+	id_rango_etario INT PRIMARY KEY IDENTITY(0,1),
+	rango_etario VARCHAR(50) NULL
+);
+GO
 
 --Turnos
 CREATE TABLE R2D2_ARTURITO.BI_RANGO_TURNOS(
-	id decimal(18, 0) IDENTITY PRIMARY KEY,
-	rango_turno nvarchar(50) NOT NULL
-)
+	id_rango_turnos INT PRIMARY KEY IDENTITY(0,1),
+	rango_turno VARCHAR(50) NULL
+);
+GO
 
 --Medio Pago
 CREATE TABLE R2D2_ARTURITO.BI_MEDIO_PAGO(
-	id decimal(18, 0) IDENTITY PRIMARY KEY,
-	descripcion varchar(50)
-)
+	id_medio_pago INT PRIMARY KEY IDENTITY(0,1),
+	descripcion VARCHAR(50)
+);
+GO
 
 --Categoria Productos
 CREATE TABLE R2D2_ARTURITO.BI_CATEGORIA_PRODUCTOS(
-	id decimal(18, 0) IDENTITY PRIMARY KEY,
-	descripcion varchar(50)
-)
-
-/*
--- Cuotas
-CREATE TABLE R2D2_ARTURITO.BI_CUOTAS(
-	id decimal(18, 0) IDENTITY PRIMARY KEY,
-	nro_cuotas integer NOT NULL
-)
-
---Tipo Caja
-CREATE TABLE R2D2_ARTURITO.BI_CUOTAS(
-	id decimal(18, 0) IDENTITY PRIMARY KEY,
-	descripcion varchar(50)
-)
-
-*/
-
-
-COMMIT TRANSACTION
-
---------------------------------------------- H E C H O S ----------------------------------------
-BEGIN TRANSACTION
-
-COMMIT TRANSACTION
-
-
---------------------------------------- C R E A C I O N   F K ---------------------------------------
-
-BEGIN TRANSACTION
-COMMIT TRANSACTION
-
---------------------------------------- C R E A C I O N  SP DE MIGRACION ---------------------------------------
+	id INT PRIMARY KEY IDENTITY(0,1),
+	id_categoria INT NULL,
+	descripcion_categoria VARCHAR(50) NULL,
+	id_subcategoria INT NULL,
+	descripcion_subcategoria VARCHAR(50) NULL
+);
 GO
---------------------------------------------- D I M E N S I O N E S ----------------------------------------
+
+
+/*************************************************
+ *	MIGRACIONES DE DATOS
+ *************************************************/
 
 --Turnos
-CREATE PROCEDURE R2D2_ARTURITO.BI_migrar_TURNOS
-AS
+CREATE PROCEDURE R2D2_ARTURITO.BI_MIGRAR_RANGO_TURNOS AS
 BEGIN
-	--SET IDENTITY_INSERT R2D2_ARTURIT.BI_Rango_Horario ON
 	INSERT INTO R2D2_ARTURITO.BI_RANGO_TURNOS(rango_turno) 
-	VALUES	('8:00-12:00'), 
-			('12:00-16:00'), 
-			('16:00-20:00')	
+		VALUES ('8:00-12:00'), ('12:00-16:00'), ('16:00-20:00')	
 END
 GO
 
 --Rango Etario
-CREATE PROCEDURE R2D2_ARTURITO.BI_migrar_rango_etario
+CREATE PROCEDURE R2D2_ARTURITO.BI_MIGRAR_RANGO_ETARIO
 AS
 BEGIN
-	SET IDENTITY_INSERT R2D2_ARTURITO.BI_RANGO_ETARIO ON
-	INSERT INTO R2D2_ARTURITO.BI_RANGO_ETARIO (id, rango_etario)
-	VALUES (1, '< 25'),
-			(2, '25 - 35'),
-			(3, '35 - 50'),
-			(4,'> 50')
+	INSERT INTO R2D2_ARTURITO.BI_RANGO_ETARIO (rango_etario)
+		VALUES ('< 25'),('25 - 35'),('35 - 50'),('> 50')
 END
 GO
 
-CREATE PROCEDURE R2D2_ARTURITO.BI_migrar_tiempo
+CREATE PROCEDURE R2D2_ARTURITO.BI_MIGRAR_TIEMPO
 AS
 BEGIN
 	INSERT INTO R2D2_ARTURITO.BI_TIEMPO (anio, cuatrimestre, mes)
 	SELECT DISTINCT
-		YEAR(fecha),
-		DATEPART(quarter, fecha),
-		MONTH(fecha)
+		YEAR(fecha) AS anio,
+		DATEPART(quarter, fecha) AS cuatrimestre,
+		MONTH(fecha) AS mes
 	FROM R2D2_ARTURITO.VENTA
 END
 
 
 
 GO
-
---------------------------------------- C R E A C I O N   F U N C I O N E S ---------------------------------------
-
---------------------------------------- M I G R A C I O N   B I ---------------------------------------
-
-
---------------------------------------- C R E A C I O N   V I S T A S ---------------------------------------
