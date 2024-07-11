@@ -68,7 +68,7 @@ IF EXISTS (SELECT 1 FROM SYS.OBJECTS WHERE schema_id = SCHEMA_ID('R2D2_ARTURITO'
 GO
 
 /*************************************************
- *	CREACION TABLAS DE DIMENSIONES BASICAS SEGÚN ENUNCIADO
+ *	CREACION DIMENSIONES BASICAS SEGÚN ENUNCIADO
  *************************************************/
 
 CREATE SCHEMA BI_R2D2_ARTURITO
@@ -91,7 +91,9 @@ GO
 
 CREATE TABLE BI_R2D2_ARTURITO.BI_SUCURSAL(
 	id_sucursal INT PRIMARY KEY IDENTITY(0,1),
-	nombre VARCHAR(200) NULL
+	nombre VARCHAR(200) NULL,
+	id_ubicacion INT NOT NULL,
+	FOREIGN KEY (id_ubicacion) REFERENCES BI_R2D2_ARTURITO.BI_UBICACION (id_ubicacion)
 );
 GO
 
@@ -102,7 +104,7 @@ CREATE TABLE BI_R2D2_ARTURITO.BI_RANGO_ETARIO(
 GO
 
 CREATE TABLE BI_R2D2_ARTURITO.BI_RANGO_TURNOS(
-	id_rango_turnos INT PRIMARY KEY IDENTITY(0,1),
+	id_turno INT PRIMARY KEY IDENTITY(0,1),
 	inicio TIME NULL,
 	fin TIME NULL
 );
@@ -115,12 +117,27 @@ CREATE TABLE BI_R2D2_ARTURITO.BI_MEDIO_PAGO(
 GO
 
 CREATE TABLE BI_R2D2_ARTURITO.BI_CATEGORIZACION_PRODUCTOS(
-	id INT PRIMARY KEY IDENTITY(0,1),
+	id_categorizacion INT PRIMARY KEY IDENTITY(0,1),
 	descripcion_categoria VARCHAR(200) NULL,
 	descripcion_subcategoria VARCHAR(200) NULL
 );
 GO
 
+/*************************************************
+ *	CREACION TABLAS NECESARIAS PARA VISTAS 1,2,3 y 4
+ *************************************************/
+
+CREATE TABLE BI_R2D2_ARTURITO.BI_VENTA(
+	id_venta INT PRIMARY KEY IDENTITY(0,1),
+	total_venta DECIMAL(10,2),
+	total_items_vendidos INT NULL,
+	id_sucursal INT NULL,
+	id_tiempo INT NULL,
+	id_turno INT NULL,
+	FOREIGN KEY (id_sucursal) REFERENCES BI_R2D2_ARTURITO.BI_SUCURSAL(id_sucursal),
+	FOREIGN KEY (id_tiempo) REFERENCES BI_R2D2_ARTURITO.BI_TIEMPO(id_tiempo),
+	FOREIGN KEY (id_turno) REFERENCES BI_R2D2_ARTURITO.BI_RANGO_TURNOS(id_turno)
+)
 
 /*************************************************
  *	MIGRACIONES DE DATOS DE DIMENSIONES OBLIGATORIAS
