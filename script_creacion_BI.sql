@@ -277,8 +277,8 @@ CREATE PROCEDURE BI_R2D2_ARTURITO.BI_MIGRAR_VENTAS AS
  GO
 
 /************************************************************************************
- * VISTA 1:
- * Ticket Promedio mensual. Valor promedio de las ventas (en $) según la
+ * VISTA 1: Ticket Promedio mensual. 
+ * Valor promedio de las ventas (en $) según la
  * localidad, año y mes. Se calcula en función de la sumatoria del importe de las
  * ventas sobre el total de las mismas.
  ************************************************************************************/
@@ -289,7 +289,7 @@ CREATE VIEW BI_R2D2_ARTURITO.VENTA_PROMEDIO_MENSUAL AS
 		BI_U.provincia AS Provincia,
 		BI_TI.anio AS Anio,
 		BI_TI.mes AS Mes,
-		SUM(BI_V.total_venta)/SUM(BI_V.cantidad_items_vendidos) AS Promedio
+		SUM(BI_V.total_venta)/COUNT(*) AS [Promedio en Ventas]
 	FROM BI_R2D2_ARTURITO.BI_VENTA BI_V
 		INNER JOIN BI_R2D2_ARTURITO.BI_SUCURSAL BI_S
 			ON BI_V.id_sucursal = BI_S.id_sucursal
@@ -304,6 +304,31 @@ CREATE VIEW BI_R2D2_ARTURITO.VENTA_PROMEDIO_MENSUAL AS
 		BI_TI.mes
  GO
 
+ /************************************************************************************
+ * VISTA 2: Cantidad unidades promedio: 
+ * Cantidad promedio de artículos que se venden en función de los tickets según el 
+ * turno para cada cuatrimestre de cada año. 
+ * Se obtiene sumando la cantidad de artículos de todos los tickets correspondientes
+ * sobre la cantidad de tickets. Si un producto tiene más de una unidad en un ticket,
+ * para el indicador se consideran todas las unidades.
+ ************************************************************************************/
+
+ CREATE VIEW BI_R2D2_ARTURITO.CANTIDAD_UNIDADES_PROMEDIO AS
+	SELECT 
+		BI_TI.cuatrimestre AS Cuatrimestre,
+		CONCAT(BI_RTU.inicio,'-',BI_RTU.fin) AS Turno,
+		SUM(BI_V.cantidad_items_vendidos) / COUNT(*) AS [Promedio items Vendidos]
+	FROM BI_R2D2_ARTURITO.BI_VENTA BI_V
+		INNER JOIN BI_R2D2_ARTURITO.BI_RANGO_TURNOS BI_RTU
+			ON BI_V.id_turno = BI_RTU.id_turno
+		INNER JOIN BI_R2D2_ARTURITO.BI_TIEMPO BI_TI
+			ON BI_V.id_tiempo = BI_TI.id_tiempo
+	GROUP BY
+		BI_TI.cuatrimestre,
+		BI_RTU.inicio,
+		BI_RTU.fin
+ GO
+
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_TIEMPO;
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_UBICACION;
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_SUCURSAL;
@@ -313,5 +338,3 @@ CREATE VIEW BI_R2D2_ARTURITO.VENTA_PROMEDIO_MENSUAL AS
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_MEDIO_PAGO;
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_CATEGORIZACION_PRODUCTOS;
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_VENTAS;
-
- SELECT * FROM BI_R2D2_ARTURITO.VENTA_PROMEDIO_MENSUAL;
