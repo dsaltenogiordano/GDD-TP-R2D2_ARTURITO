@@ -363,6 +363,35 @@ CREATE VIEW BI_R2D2_ARTURITO.VENTA_PROMEDIO_MENSUAL AS
 		BI_RE.rango_etario
  GO
 
+/************************************************************************************
+ * VISTA 4: 
+ * Cantidad de ventas registradas por turno para cada localidad según el mes de cada año.
+ ************************************************************************************/
+
+  CREATE VIEW BI_R2D2_ARTURITO.CANTIDAD_VENTAS_POR_TURNO AS
+	SELECT 
+		CONCAT(BI_RTU.inicio,'-',BI_RTU.fin) AS Turno,
+		BI_U.localidad AS Localidad,
+		BI_TI.anio AS Anio,
+		BI_TI.mes AS Mes,
+		COUNT(*) AS [Cantidad de Ventas]
+	FROM BI_R2D2_ARTURITO.BI_VENTA BI_V
+		INNER JOIN BI_R2D2_ARTURITO.BI_RANGO_TURNOS BI_RTU
+			ON BI_V.id_turno = BI_RTU.id_turno
+		INNER JOIN BI_R2D2_ARTURITO.BI_SUCURSAL BI_S
+			ON BI_V.id_sucursal = BI_S.id_sucursal
+		INNER JOIN BI_R2D2_ARTURITO.BI_UBICACION BI_U
+			ON BI_S.id_ubicacion = BI_U.id_ubicacion
+		INNER JOIN BI_R2D2_ARTURITO.BI_TIEMPO BI_TI
+			ON BI_V.id_tiempo = BI_TI.id_tiempo
+	GROUP BY
+		BI_RTU.inicio,
+		BI_RTU.fin,
+		BI_U.localidad,
+		BI_TI.anio,
+		BI_TI.mes
+ GO
+
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_TIEMPO;
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_UBICACION;
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_SUCURSAL;
