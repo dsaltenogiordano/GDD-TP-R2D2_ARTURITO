@@ -38,8 +38,8 @@ GO
 
 CREATE TABLE BI_R2D2_ARTURITO.BI_RANGO_TURNOS(
 	id_turno INT PRIMARY KEY IDENTITY(0,1),
-	inicio TIME NULL,
-	fin TIME NULL
+	inicio TIME(0) NULL,
+	fin TIME(0) NULL
 );
 GO
 
@@ -217,10 +217,10 @@ END
 GO 
 
 CREATE FUNCTION BI_R2D2_ARTURITO.ObtenerHora (@fecha SMALLDATETIME)
-RETURNS TIME
+RETURNS TIME(0)
 AS
 BEGIN 
-    RETURN CAST(@fecha AS TIME);
+    RETURN CAST(@fecha AS TIME(0));
 END
 GO
 
@@ -304,7 +304,7 @@ CREATE VIEW BI_R2D2_ARTURITO.VENTA_PROMEDIO_MENSUAL AS
 		BI_TI.mes
  GO
 
- /************************************************************************************
+/************************************************************************************
  * VISTA 2: Cantidad unidades promedio: 
  * Cantidad promedio de artículos que se venden en función de los tickets según el 
  * turno para cada cuatrimestre de cada año. 
@@ -327,6 +327,40 @@ CREATE VIEW BI_R2D2_ARTURITO.VENTA_PROMEDIO_MENSUAL AS
 		BI_TI.cuatrimestre,
 		BI_RTU.inicio,
 		BI_RTU.fin
+ GO
+
+/************************************************************************************
+ * VISTA 3: 
+ * Porcentaje anual de ventas registradas por rango etario del empleado
+ * según el tipo de caja para cada cuatrimestre. 
+ * Se calcula tomando la cantidad de ventas correspondientes sobre el total de ventas anual.
+ ************************************************************************************/
+
+ CREATE VIEW BI_R2D2_ARTURITO.PORCENTAJE_ANUAL_VENTAS_POR_RANGO_ETARIO AS
+	SELECT
+		BI_TI.anio AS Anio,
+		BI_TI.cuatrimestre AS Cuatrimestre,
+		BI_TIC.descripcion AS [Tipo de Caja],
+		BI_RE.rango_etario AS [Rango Etario],
+		CAST((100.0 * COUNT(*)) / (
+			SELECT COUNT(*)
+			FROM BI_R2D2_ARTURITO.BI_VENTA
+				INNER JOIN BI_R2D2_ARTURITO.BI_TIEMPO
+					ON BI_VENTA.id_tiempo = BI_TIEMPO.id_tiempo
+			WHERE BI_TI.anio = BI_TIEMPO.anio
+		) AS DECIMAL(3,2)) [Porcentaje Anual Ventas]
+	FROM BI_R2D2_ARTURITO.BI_VENTA BI_V
+		INNER JOIN BI_R2D2_ARTURITO.BI_TIEMPO BI_TI
+			ON BI_V.id_tiempo = BI_TI.id_tiempo
+		INNER JOIN BI_R2D2_ARTURITO.BI_TIPO_CAJA BI_TIC
+			ON BI_V.id_tipo_caja = BI_TIC.id_tipo_caja
+		INNER JOIN BI_R2D2_ARTURITO.BI_RANGO_ETARIO BI_RE
+			ON BI_V.id_rango_etario = BI_RE.id_rango_etario
+	GROUP BY
+		BI_TI.anio,
+		BI_TI.cuatrimestre,
+		BI_TIC.descripcion,
+		BI_RE.rango_etario
  GO
 
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_TIEMPO;
