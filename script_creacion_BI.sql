@@ -1,12 +1,12 @@
 USE GD1C2024
 GO
 
+CREATE SCHEMA BI_R2D2_ARTURITO
+GO
+
 /************************************************************************************
  *	CREACION DIMENSIONES BASICAS SEGÚN ENUNCIADO
  ************************************************************************************/
-
-CREATE SCHEMA BI_R2D2_ARTURITO
-GO
 
 CREATE TABLE BI_R2D2_ARTURITO.BI_TIEMPO(
 	id_tiempo INT PRIMARY KEY IDENTITY(0,1),
@@ -21,7 +21,6 @@ CREATE TABLE BI_R2D2_ARTURITO.BI_UBICACION(
 	localidad VARCHAR(200) NULL,
 	provincia VARCHAR(200) NULL
 );
-GO
 
 CREATE TABLE BI_R2D2_ARTURITO.BI_SUCURSAL(
 	id_sucursal INT PRIMARY KEY IDENTITY(0,1),
@@ -37,11 +36,10 @@ CREATE TABLE BI_R2D2_ARTURITO.BI_RANGO_ETARIO(
 );
 GO
 
-
-
-CREATE TABLE BI_R2D2_ARTURITO.BI_MEDIO_PAGO(
-	id_medio_pago INT PRIMARY KEY IDENTITY(0,1),
-	descripcion VARCHAR(50)
+CREATE TABLE BI_R2D2_ARTURITO.BI_RANGO_TURNOS(
+	id_turno INT PRIMARY KEY IDENTITY(0,1),
+	inicio TIME NULL,
+	fin TIME NULL
 );
 GO
 
@@ -52,17 +50,24 @@ CREATE TABLE BI_R2D2_ARTURITO.BI_CATEGORIZACION_PRODUCTOS(
 );
 GO
 
+CREATE TABLE BI_R2D2_ARTURITO.BI_MEDIO_PAGO(
+	id_medio_pago INT PRIMARY KEY IDENTITY(0,1),
+	descripcion VARCHAR(50)
+);
+GO
+
 /************************************************************************************
- *	CREACION TABLAS NECESARIAS PARA VISTAS 1,2,3 y 4
+ *	CREACION DIMENSIONES ADICIONALES PARA LAS VISTAS
  ************************************************************************************/
 
- CREATE TABLE BI_R2D2_ARTURITO.BI_TIPO_CAJA(
+CREATE TABLE BI_R2D2_ARTURITO.BI_TIPO_CAJA(
 	id_tipo_caja INT PRIMARY KEY IDENTITY(0,1),
 	descripcion VARCHAR(50) NOT NULL
  );
- GO
+GO
 
 CREATE TABLE BI_R2D2_ARTURITO.BI_VENTA(
+	id_venta INT PRIMARY KEY IDENTITY(0,1),
 	total_venta DECIMAL(10,2),
 	cantidad_items_vendidos INT NULL,
 	id_sucursal INT NOT NULL,
@@ -74,26 +79,38 @@ CREATE TABLE BI_R2D2_ARTURITO.BI_VENTA(
 	FOREIGN KEY (id_tiempo) REFERENCES BI_R2D2_ARTURITO.BI_TIEMPO(id_tiempo),
 	FOREIGN KEY (id_turno) REFERENCES BI_R2D2_ARTURITO.BI_RANGO_TURNOS(id_turno),
 	FOREIGN KEY (id_tipo_caja) REFERENCES BI_R2D2_ARTURITO.BI_TIPO_CAJA(id_tipo_caja),
-	FOREIGN KEY (id_rango_etario) REFERENCES BI_R2D2_ARTURITO.BI_RANGO_ETARIO(id_rango_etario),
-	PRIMARY KEY (id_sucursal,id_tiempo,id_turno,id_tipo_caja,id_rango_etario)
+	FOREIGN KEY (id_rango_etario) REFERENCES BI_R2D2_ARTURITO.BI_RANGO_ETARIO(id_rango_etario)
 );
 GO
+
 
 /************************************************************************************
  *	MIGRACIONES DE DATOS DE DIMENSIONES OBLIGATORIAS
  ************************************************************************************/
+
+CREATE FUNCTION BI_R2D2_ARTURITO.ObtenerCuatrimestre (@fecha DATE)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @cuatrimestre INT;
+
+    SET @cuatrimestre = 
+	CASE
+        WHEN MONTH(@fecha) BETWEEN 1 AND 4 THEN 1
+        WHEN MONTH(@fecha) BETWEEN 5 AND 8 THEN 2
+        WHEN MONTH(@fecha) BETWEEN 9 AND 12 THEN 3
+        ELSE NULL
+    END;
+    RETURN @cuatrimestre;
+END;
+GO
 
 CREATE PROCEDURE BI_R2D2_ARTURITO.BI_MIGRAR_TIEMPO AS
 BEGIN
 	INSERT INTO BI_R2D2_ARTURITO.BI_TIEMPO (anio, cuatrimestre, mes)
 	SELECT DISTINCT
 		YEAR(V.fecha) AS anio,
-		CASE
-			WHEN MONTH(V.fecha) BETWEEN 1 AND 4 THEN 1
-			WHEN MONTH(V.fecha) BETWEEN 5 AND 8 THEN 2
-			WHEN MONTH(V.fecha) BETWEEN 9 AND 12 THEN 3
-			ELSE NULL
-		END AS cuatrimestre,
+		BI_R2D2_ARTURITO.ObtenerCuatrimestre(V.fecha) AS cuatrimestre,
 		MONTH(V.fecha) AS mes
 	FROM R2D2_ARTURITO.VENTA V
 END
@@ -177,38 +194,124 @@ BEGIN
 END
 GO
 
-CREATE PROCEDURE BI_R2D2_ARTURITO.BI_MIGRAR_VENTAS AS
+/************************************************************************************
+ *	MIGRACIONES DE DATOS DE DIMENSIONES ADICIONALES
+ ************************************************************************************/
+
+CREATE FUNCTION BI_R2D2_ARTURITO.ObtenerRangoEtario (@fecha_nacimiento DATE)
+RETURNS VARCHAR(50)
+AS
 BEGIN
+	DECLARE @rango_etario VARCHAR(50);
+    DECLARE @edad INT;
+    
+    SET @edad = DATEDIFF(YEAR, @fecha_nacimiento, GETDATE());
+
+	IF (@edad < 25) BEGIN SET @rango_etario = '< 25' END
+	ELSE IF (@edad BETWEEN 25 AND 35) BEGIN SET @rango_etario = '25 - 35' END
+	ELSE IF (@edad BETWEEN 35 AND 50) BEGIN SET @rango_etario = '35 - 50' END
+	ELSE IF (@edad < 25) BEGIN SET @rango_etario = '> 50' END
+    
+    RETURN @rango_etario;
+END
+GO 
+
+CREATE FUNCTION BI_R2D2_ARTURITO.ObtenerHora (@fecha SMALLDATETIME)
+RETURNS TIME
+AS
+BEGIN 
+    RETURN CAST(@fecha AS TIME);
+END
+GO
+
+CREATE PROCEDURE BI_R2D2_ARTURITO.BI_MIGRAR_VENTAS AS
+ BEGIN
 	INSERT INTO BI_R2D2_ARTURITO.BI_VENTA(
+		total_venta,
+		cantidad_items_vendidos,
 		id_sucursal,
 		id_tiempo,
 		id_turno,
 		id_tipo_caja,
-		total_items_vendidos,
-		total_venta)
-	SELECT 
+		id_rango_etario
+	)
+	SELECT DISTINCT
+		V.total_venta AS total_venta,
+		SUM(IV.cantidad) AS cantidad_items_vendidos,
+		BI_S.id_sucursal AS id_sucursal,
+		BI_TI.id_tiempo AS id_tiempo,
+		BI_RTU.id_turno AS id_turno,
+		BI_TC.id_tipo_caja AS id_tipo_caja,
+		BI_RE.id_rango_etario AS id_rango_etario
 	FROM R2D2_ARTURITO.VENTA V
-		INNER JOIN BI_R2D2_ARTURITO.BI_SUCURSAL S
-			
-END
-GO
+		INNER JOIN R2D2_ARTURITO.ITEM_VENTA IV
+			ON V.id_venta = IV.id_venta
+		INNER JOIN R2D2_ARTURITO.SUCURSAL S
+			ON V.id_sucursal = S.id_sucursal
+		INNER JOIN BI_R2D2_ARTURITO.BI_SUCURSAL BI_S
+			ON S.nombre = BI_S.nombre
+		INNER JOIN BI_R2D2_ARTURITO.BI_TIEMPO BI_TI
+			ON YEAR(V.fecha) = BI_TI.anio
+			AND BI_R2D2_ARTURITO.ObtenerCuatrimestre(V.fecha) = BI_TI.cuatrimestre
+			AND MONTH(V.fecha) = BI_TI.mes
+		INNER JOIN R2D2_ARTURITO.CAJA C
+			ON V.id_caja = C.id_caja
+		INNER JOIN R2D2_ARTURITO.TIPO_CAJA TC
+			ON C.id_tipo_caja = TC.id_tipo_caja
+		INNER JOIN BI_R2D2_ARTURITO.BI_TIPO_CAJA BI_TC
+			ON TC.descripcion = BI_TC.descripcion
+		INNER JOIN R2D2_ARTURITO.EMPLEADO E
+			ON V.id_empleado = E.id_empleado
+		INNER JOIN BI_R2D2_ARTURITO.BI_RANGO_ETARIO BI_RE
+			ON BI_R2D2_ARTURITO.ObtenerRangoEtario(E.fecha_nacimiento) = BI_RE.rango_etario
+		INNER JOIN BI_R2D2_ARTURITO.BI_RANGO_TURNOS BI_RTU
+			ON BI_R2D2_ARTURITO.ObtenerHora(V.fecha) BETWEEN BI_RTU.inicio AND BI_RTU.fin
+	GROUP BY 
+		V.total_venta, 
+		BI_S.id_sucursal,
+		BI_TI.id_tiempo,
+		BI_TC.id_tipo_caja,
+		BI_RE.id_rango_etario,
+		BI_RTU.id_turno
+ END
+ GO
 
 /************************************************************************************
- *	VISTA 1:
+ * VISTA 1:
  * Ticket Promedio mensual. Valor promedio de las ventas (en $) según la
  * localidad, año y mes. Se calcula en función de la sumatoria del importe de las
  * ventas sobre el total de las mismas.
  ************************************************************************************/
 
- CREATE VIEW BI_R2D2_ARTURITO.TICKET_PROMEDIO_MENSUAL AS
+CREATE VIEW BI_R2D2_ARTURITO.VENTA_PROMEDIO_MENSUAL AS
 	SELECT
-	FROM BI_R2D2_ARTURITO.BI_UBICACION
+		BI_U.localidad AS Localidad,
+		BI_U.provincia AS Provincia,
+		BI_TI.anio AS Anio,
+		BI_TI.mes AS Mes,
+		SUM(BI_V.total_venta)/SUM(BI_V.cantidad_items_vendidos) AS Promedio
+	FROM BI_R2D2_ARTURITO.BI_VENTA BI_V
+		INNER JOIN BI_R2D2_ARTURITO.BI_SUCURSAL BI_S
+			ON BI_V.id_sucursal = BI_S.id_sucursal
+		INNER JOIN BI_R2D2_ARTURITO.BI_UBICACION BI_U
+			ON BI_S.id_ubicacion = BI_U.id_ubicacion
+		INNER JOIN BI_R2D2_ARTURITO.BI_TIEMPO BI_TI
+			ON BI_V.id_tiempo = BI_TI.id_tiempo
+	GROUP BY
+		BI_U.localidad,
+		BI_U.provincia,
+		BI_TI.anio,
+		BI_TI.mes
  GO
 
-EXEC BI_R2D2_ARTURITO.BI_MIGRAR_TIEMPO;
-EXEC BI_R2D2_ARTURITO.BI_MIGRAR_UBICACION;
-EXEC BI_R2D2_ARTURITO.BI_MIGRAR_SUCURSAL;
-EXEC BI_R2D2_ARTURITO.BI_MIGRAR_RANGO_ETARIO;
-EXEC BI_R2D2_ARTURITO.BI_MIGRAR_RANGO_TURNOS;
-EXEC BI_R2D2_ARTURITO.BI_MIGRAR_MEDIO_PAGO;
-EXEC BI_R2D2_ARTURITO.BI_MIGRAR_CATEGORIZACION_PRODUCTOS;
+ EXEC BI_R2D2_ARTURITO.BI_MIGRAR_TIEMPO;
+ EXEC BI_R2D2_ARTURITO.BI_MIGRAR_UBICACION;
+ EXEC BI_R2D2_ARTURITO.BI_MIGRAR_SUCURSAL;
+ EXEC BI_R2D2_ARTURITO.BI_MIGRAR_RANGO_ETARIO;
+ EXEC BI_R2D2_ARTURITO.BI_MIGRAR_RANGO_TURNOS;
+ EXEC BI_R2D2_ARTURITO.BI_MIGRAR_TIPO_CAJA;
+ EXEC BI_R2D2_ARTURITO.BI_MIGRAR_MEDIO_PAGO;
+ EXEC BI_R2D2_ARTURITO.BI_MIGRAR_CATEGORIZACION_PRODUCTOS;
+ EXEC BI_R2D2_ARTURITO.BI_MIGRAR_VENTAS;
+
+ SELECT * FROM BI_R2D2_ARTURITO.VENTA_PROMEDIO_MENSUAL;
