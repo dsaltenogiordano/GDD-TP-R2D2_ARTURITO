@@ -67,6 +67,7 @@ CREATE TABLE BI_R2D2_ARTURITO.BI_TIPO_CAJA(
 GO
 
 CREATE TABLE BI_R2D2_ARTURITO.BI_VENTA(
+	id_venta INT PRIMARY KEY IDENTITY(0,1),
 	total_venta DECIMAL(10,2),
 	cantidad_items_vendidos INT NULL,
 	id_sucursal INT NOT NULL,
@@ -78,8 +79,7 @@ CREATE TABLE BI_R2D2_ARTURITO.BI_VENTA(
 	FOREIGN KEY (id_tiempo) REFERENCES BI_R2D2_ARTURITO.BI_TIEMPO(id_tiempo),
 	FOREIGN KEY (id_turno) REFERENCES BI_R2D2_ARTURITO.BI_RANGO_TURNOS(id_turno),
 	FOREIGN KEY (id_tipo_caja) REFERENCES BI_R2D2_ARTURITO.BI_TIPO_CAJA(id_tipo_caja),
-	FOREIGN KEY (id_rango_etario) REFERENCES BI_R2D2_ARTURITO.BI_RANGO_ETARIO(id_rango_etario),
-	PRIMARY KEY (id_sucursal,id_tiempo,id_turno,id_tipo_caja,id_rango_etario)
+	FOREIGN KEY (id_rango_etario) REFERENCES BI_R2D2_ARTURITO.BI_RANGO_ETARIO(id_rango_etario)
 );
 GO
 
@@ -199,21 +199,13 @@ GO
  ************************************************************************************/
 
 CREATE FUNCTION BI_R2D2_ARTURITO.ObtenerRangoEtario (@fecha_nacimiento DATE)
-RETURNS VARCHAR
+RETURNS VARCHAR(50)
 AS
 BEGIN
-	DECLARE @rango_etario VARCHAR;
+	DECLARE @rango_etario VARCHAR(50);
     DECLARE @edad INT;
     
     SET @edad = DATEDIFF(YEAR, @fecha_nacimiento, GETDATE());
-    
-    IF 
-		(MONTH(@fecha_nacimiento) > MONTH(GETDATE())) 
-		OR (MONTH(@fecha_nacimiento) = MONTH(GETDATE()) 
-		AND DAY(@fecha_nacimiento) > DAY(GETDATE()))
-    BEGIN
-        SET @edad = @edad - 1;
-    END
 
 	IF (@edad < 25) BEGIN SET @rango_etario = '< 25' END
 	ELSE IF (@edad BETWEEN 25 AND 35) BEGIN SET @rango_etario = '25 - 35' END
@@ -232,7 +224,7 @@ BEGIN
 END
 GO
 
- CREATE PROCEDURE BI_R2D2_ARTURITO.BI_MIGRAR_VENTAS AS
+CREATE PROCEDURE BI_R2D2_ARTURITO.BI_MIGRAR_VENTAS AS
  BEGIN
 	INSERT INTO BI_R2D2_ARTURITO.BI_VENTA(
 		total_venta,
@@ -243,7 +235,7 @@ GO
 		id_tipo_caja,
 		id_rango_etario
 	)
-	SELECT
+	SELECT DISTINCT
 		V.total_venta AS total_venta,
 		SUM(IV.cantidad) AS cantidad_items_vendidos,
 		BI_S.id_sucursal AS id_sucursal,
@@ -284,6 +276,34 @@ GO
  END
  GO
 
+/************************************************************************************
+ * VISTA 1:
+ * Ticket Promedio mensual. Valor promedio de las ventas (en $) según la
+ * localidad, año y mes. Se calcula en función de la sumatoria del importe de las
+ * ventas sobre el total de las mismas.
+ ************************************************************************************/
+
+CREATE VIEW BI_R2D2_ARTURITO.VENTA_PROMEDIO_MENSUAL AS
+	SELECT
+		BI_U.localidad AS Localidad,
+		BI_U.provincia AS Provincia,
+		BI_TI.anio AS Anio,
+		BI_TI.mes AS Mes,
+		SUM(BI_V.total_venta)/SUM(BI_V.cantidad_items_vendidos) AS Promedio
+	FROM BI_R2D2_ARTURITO.BI_VENTA BI_V
+		INNER JOIN BI_R2D2_ARTURITO.BI_SUCURSAL BI_S
+			ON BI_V.id_sucursal = BI_S.id_sucursal
+		INNER JOIN BI_R2D2_ARTURITO.BI_UBICACION BI_U
+			ON BI_S.id_ubicacion = BI_U.id_ubicacion
+		INNER JOIN BI_R2D2_ARTURITO.BI_TIEMPO BI_TI
+			ON BI_V.id_tiempo = BI_TI.id_tiempo
+	GROUP BY
+		BI_U.localidad,
+		BI_U.provincia,
+		BI_TI.anio,
+		BI_TI.mes
+ GO
+
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_TIEMPO;
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_UBICACION;
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_SUCURSAL;
@@ -294,10 +314,4 @@ GO
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_CATEGORIZACION_PRODUCTOS;
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_VENTAS;
 
-
-/************************************************************************************
- * VISTA 1:
- * Ticket Promedio mensual. Valor promedio de las ventas (en $) según la
- * localidad, año y mes. Se calcula en función de la sumatoria del importe de las
- * ventas sobre el total de las mismas.
- ************************************************************************************/
+ SELECT * FROM BI_R2D2_ARTURITO.VENTA_PROMEDIO_MENSUAL;
