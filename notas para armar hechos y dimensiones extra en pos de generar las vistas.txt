@@ -1,11 +1,3 @@
-DESCUENTOS
-
-5) Porcentaje de descuento aplicados en función del total de los tickets según el
-mes de cada año.
-
-6) Las tres categorías de productos con mayor descuento aplicado a partir de
-promociones para cada cuatrimestre de cada año.
-
 ENVIOS
 
 7) Porcentaje de cumplimiento de envíos en los tiempos programados por
