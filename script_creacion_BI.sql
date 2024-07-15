@@ -70,6 +70,8 @@ CREATE TABLE BI_R2D2_ARTURITO.BI_VENTA(
 	id_venta INT PRIMARY KEY IDENTITY(0,1),
 	total_venta DECIMAL(10,2),
 	cantidad_items_vendidos INT NULL,
+	total_promociones DECIMAL(10,2) NULL,
+	total_descuentos DECIMAL(10,2) NULL,
 	id_sucursal INT NOT NULL,
 	id_tiempo INT NOT NULL,
 	id_turno INT NOT NULL,
@@ -229,6 +231,8 @@ CREATE PROCEDURE BI_R2D2_ARTURITO.BI_MIGRAR_VENTAS AS
 	INSERT INTO BI_R2D2_ARTURITO.BI_VENTA(
 		total_venta,
 		cantidad_items_vendidos,
+		total_promociones,
+		total_descuentos,
 		id_sucursal,
 		id_tiempo,
 		id_turno,
@@ -238,6 +242,8 @@ CREATE PROCEDURE BI_R2D2_ARTURITO.BI_MIGRAR_VENTAS AS
 	SELECT DISTINCT
 		V.total_venta AS total_venta,
 		SUM(IV.cantidad) AS cantidad_items_vendidos,
+		SUM(V.total_descuento_promociones) AS total_promociones,
+		SUM(V.total_descuento_aplicado_mp) AS total_descuentos,
 		BI_S.id_sucursal AS id_sucursal,
 		BI_TI.id_tiempo AS id_tiempo,
 		BI_RTU.id_turno AS id_turno,
@@ -348,7 +354,7 @@ CREATE VIEW BI_R2D2_ARTURITO.VENTA_PROMEDIO_MENSUAL AS
 				INNER JOIN BI_R2D2_ARTURITO.BI_TIEMPO
 					ON BI_VENTA.id_tiempo = BI_TIEMPO.id_tiempo
 			WHERE BI_TI.anio = BI_TIEMPO.anio
-		) AS DECIMAL(3,2)) [Porcentaje Anual Ventas]
+		) AS DECIMAL(10,2)) [Porcentaje Anual Ventas]
 	FROM BI_R2D2_ARTURITO.BI_VENTA BI_V
 		INNER JOIN BI_R2D2_ARTURITO.BI_TIEMPO BI_TI
 			ON BI_V.id_tiempo = BI_TI.id_tiempo
@@ -388,6 +394,28 @@ CREATE VIEW BI_R2D2_ARTURITO.VENTA_PROMEDIO_MENSUAL AS
 		BI_RTU.inicio,
 		BI_RTU.fin,
 		BI_U.localidad,
+		BI_TI.anio,
+		BI_TI.mes
+ GO
+
+/************************************************************************************
+ * VISTA 5: 
+ * Porcentaje de descuento aplicados en función del total de los tickets según el
+ * mes de cada año.
+ ************************************************************************************/
+
+ CREATE VIEW BI_R2D2_ARTURITO.PORCENTAJE_DESCUENTOS_APLICADOS_POR_MES AS
+	SELECT
+		BI_TI.anio AS Anio,
+		BI_TI.mes AS Mes,
+		CAST(
+			(100*(SUM(BI_V.total_promociones)+SUM(BI_V.total_descuentos)))/SUM(total_venta)
+			AS DECIMAL(10,2)
+		) [Porcentaje Descuento]
+	FROM BI_R2D2_ARTURITO.BI_VENTA BI_V
+		INNER JOIN BI_R2D2_ARTURITO.BI_TIEMPO BI_TI
+			ON BI_V.id_tiempo = BI_TI.id_tiempo
+	GROUP BY
 		BI_TI.anio,
 		BI_TI.mes
  GO
