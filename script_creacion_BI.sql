@@ -85,6 +85,15 @@ CREATE TABLE BI_R2D2_ARTURITO.BI_VENTA(
 );
 GO
 
+CREATE TABLE BI_R2D2_ARTURITO.BI_DESCUENTO_POR_CATEGORIZACION(
+	id_descuento_categorizacion INT PRIMARY KEY IDENTITY(0,1),
+	total_promocion DECIMAL (12,2) NULL,
+	id_categorizacion INT NOT NULL,
+	id_tiempo INT NOT NULL,
+	FOREIGN KEY (id_categorizacion) REFERENCES BI_R2D2_ARTURITO.BI_CATEGORIZACION_PRODUCTOS(id_categorizacion),
+	FOREIGN KEY (id_tiempo) REFERENCES BI_R2D2_ARTURITO.BI_TIEMPO(id_tiempo)
+);
+GO
 
 /************************************************************************************
  *	MIGRACIONES DE DATOS DE DIMENSIONES OBLIGATORIAS
@@ -189,10 +198,10 @@ BEGIN
 		C.descripcion AS descripcion_categoria,
 		S.descripcion AS descripcion_subcategoria
 	FROM R2D2_ARTURITO.SUBCATEGORIA S
-		INNER JOIN R2D2_ARTURITO.SUBCATEGORIA_X_CATEGORIA SXC
-			ON S.id_subcategoria = SXC.id_subcategoria
+		INNER JOIN R2D2_ARTURITO.SUBCATEGORIA_X_CATEGORIA SUBCAT_X_CAT
+			ON S.id_subcategoria = SUBCAT_X_CAT.id_subcategoria
 		INNER JOIN R2D2_ARTURITO.CATEGORIA C
-			ON SXC.id_categoria = C.id_categoria
+			ON SUBCAT_X_CAT.id_categoria = C.id_categoria
 END
 GO
 
@@ -282,6 +291,44 @@ CREATE PROCEDURE BI_R2D2_ARTURITO.BI_MIGRAR_VENTAS AS
  END
  GO
 
+ CREATE PROCEDURE BI_R2D2_ARTURITO.BI_MIGRAR_DESCUENTO_POR_CATEGORIZACION AS
+ BEGIN
+	INSERT INTO BI_R2D2_ARTURITO.BI_DESCUENTO_POR_CATEGORIZACION(
+		total_promocion,
+		id_categorizacion,
+		id_tiempo
+	)
+	SELECT
+		SUM(PROMO.promocion_aplicada) AS total_promocion,
+		BI_CP.id_categorizacion AS id_categorizacion,
+		BI_TI.id_tiempo AS id_tiempo
+	FROM R2D2_ARTURITO.VENTA V
+		INNER JOIN R2D2_ARTURITO.ITEM_VENTA IV
+			ON V.id_venta = IV.id_venta
+		INNER JOIN R2D2_ARTURITO.PROMOCION_APLICADA PROMO
+			ON IV.id_item_venta = PROMO.id_item_venta
+		INNER JOIN R2D2_ARTURITO.PRODUCTO PROD
+			ON IV.id_producto = PROD.id_producto
+		INNER JOIN R2D2_ARTURITO.SUBCATEGORIA_X_PRODUCTO SUBCAT_X_PROD
+			ON PROD.id_producto = SUBCAT_X_PROD.id_producto
+		INNER JOIN R2D2_ARTURITO.SUBCATEGORIA SUBCAT
+			ON SUBCAT_X_PROD.id_subcategoria = SUBCAT.id_subcategoria
+		INNER JOIN R2D2_ARTURITO.SUBCATEGORIA_X_CATEGORIA SUBCAT_X_CAT
+			ON SUBCAT.id_subcategoria = SUBCAT_X_CAT.id_subcategoria
+		INNER JOIN R2D2_ARTURITO.CATEGORIA CAT
+			ON SUBCAT_X_CAT.id_categoria = CAT.id_categoria
+		INNER JOIN BI_R2D2_ARTURITO.BI_CATEGORIZACION_PRODUCTOS BI_CP
+			ON SUBCAT.descripcion = BI_CP.descripcion_subcategoria
+			AND CAT.descripcion = BI_CP.descripcion_categoria
+		INNER JOIN BI_R2D2_ARTURITO.BI_TIEMPO BI_TI
+			ON YEAR(V.fecha) = BI_TI.anio
+			AND BI_R2D2_ARTURITO.ObtenerCuatrimestre(V.fecha) = BI_TI.cuatrimestre
+			AND MONTH(V.fecha) = BI_TI.mes
+	GROUP BY
+		BI_CP.id_categorizacion,
+		BI_TI.id_tiempo
+ END
+ GO
 /************************************************************************************
  * VISTA 1: Ticket Promedio mensual. 
  * Valor promedio de las ventas (en $) según la
@@ -420,6 +467,54 @@ CREATE VIEW BI_R2D2_ARTURITO.VENTA_PROMEDIO_MENSUAL AS
 		BI_TI.mes
  GO
 
+ /************************************************************************************
+ * VISTA 6 (POR CATEGORIA): 
+ * Las tres categorías de productos con mayor descuento aplicado a partir de
+ * promociones para cada cuatrimestre de cada año.
+ ************************************************************************************/
+
+ CREATE VIEW BI_R2D2_ARTURITO.TOP_TRES_CATEGORIAS_MAYOR_DESCUENTO_POR_CUATRIMESTRE AS
+	SELECT TOP 3
+		CAT_PROD.descripcion_categoria AS Categoria,
+		BI_TI.anio AS Anio,
+		BI_TI.cuatrimestre AS Cuatrimestre, 
+		SUM(DESC_X_CAT.total_promocion) AS [Total descuentos aplicados]
+	FROM BI_R2D2_ARTURITO.BI_DESCUENTO_POR_CATEGORIZACION DESC_X_CAT
+		INNER JOIN BI_R2D2_ARTURITO.BI_CATEGORIZACION_PRODUCTOS CAT_PROD
+			ON DESC_X_CAT.id_categorizacion = CAT_PROD.id_categorizacion
+		INNER JOIN BI_R2D2_ARTURITO.BI_TIEMPO BI_TI
+			ON DESC_X_CAT.id_tiempo = BI_TI.id_tiempo
+	GROUP BY
+		CAT_PROD.descripcion_categoria,
+		BI_TI.anio,
+		BI_TI.cuatrimestre
+	ORDER BY 4 DESC
+ GO
+
+ /************************************************************************************
+ * VISTA 6 (POR SUBCATEGORIA): 
+ * Las tres categorías de productos con mayor descuento aplicado a partir de
+ * promociones para cada cuatrimestre de cada año.
+ ************************************************************************************/
+
+  CREATE VIEW BI_R2D2_ARTURITO.TOP_TRES_SUBCATEGORIAS_MAYOR_DESCUENTO_POR_CUATRIMESTRE AS
+	SELECT TOP 3
+		CAT_PROD.descripcion_subcategoria AS Subategoria,
+		BI_TI.anio AS Anio,
+		BI_TI.cuatrimestre AS Cuatrimestre, 
+		SUM(DESC_X_CAT.total_promocion) AS [Total descuentos aplicados]
+	FROM BI_R2D2_ARTURITO.BI_DESCUENTO_POR_CATEGORIZACION DESC_X_CAT
+		INNER JOIN BI_R2D2_ARTURITO.BI_CATEGORIZACION_PRODUCTOS CAT_PROD
+			ON DESC_X_CAT.id_categorizacion = CAT_PROD.id_categorizacion
+		INNER JOIN BI_R2D2_ARTURITO.BI_TIEMPO BI_TI
+			ON DESC_X_CAT.id_tiempo = BI_TI.id_tiempo
+	GROUP BY
+		CAT_PROD.descripcion_subcategoria,
+		BI_TI.anio,
+		BI_TI.cuatrimestre
+	ORDER BY 4 DESC
+ GO
+
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_TIEMPO;
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_UBICACION;
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_SUCURSAL;
@@ -429,3 +524,7 @@ CREATE VIEW BI_R2D2_ARTURITO.VENTA_PROMEDIO_MENSUAL AS
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_MEDIO_PAGO;
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_CATEGORIZACION_PRODUCTOS;
  EXEC BI_R2D2_ARTURITO.BI_MIGRAR_VENTAS;
+ EXEC BI_R2D2_ARTURITO.BI_MIGRAR_DESCUENTO_POR_CATEGORIZACION;
+
+ SELECT * FROM BI_R2D2_ARTURITO.TOP_TRES_CATEGORIAS_MAYOR_DESCUENTO_POR_CUATRIMESTRE;
+ SELECT * FROM BI_R2D2_ARTURITO.TOP_TRES_SUBCATEGORIAS_MAYOR_DESCUENTO_POR_CUATRIMESTRE;
